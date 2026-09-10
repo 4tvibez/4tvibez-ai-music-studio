@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>4TVIBEZ AI MUSIC STUDIO</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#05070b;color:#fff;font-family:system-ui,-apple-system,Segoe UI,sans-serif;overflow-x:hidden}
+body:before{content:"";position:fixed;inset:-15%;pointer-events:none;z-index:-2;
+background:
+radial-gradient(ellipse 42% 28% at 18% 12%,rgba(0,198,255,.18),transparent 70%),
+radial-gradient(ellipse 38% 30% at 82% 18%,rgba(255,40,166,.16),transparent 70%),
+radial-gradient(ellipse 45% 35% at 50% 92%,rgba(112,66,255,.13),transparent 70%),
+linear-gradient(135deg,#030509 0%,#070b12 42%,#090510 100%);
+animation:studioBg 18s ease-in-out infinite alternate}
+body:after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
+background:
+linear-gradient(115deg,transparent 0 35%,rgba(49,231,255,.025) 43%,transparent 51%),
+linear-gradient(245deg,transparent 0 46%,rgba(255,57,184,.025) 54%,transparent 62%);
+background-size:140% 140%;animation:lightSweep 12s linear infinite}
+@keyframes studioBg{0%{transform:scale(1) translate3d(-1%,0,0);filter:hue-rotate(0deg)}50%{transform:scale(1.06) translate3d(1%,-1%,0)}100%{transform:scale(1.1) translate3d(-1%,1%,0);filter:hue-rotate(10deg)}}
+@keyframes lightSweep{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}.side{padding:22px 15px;border-right:1px solid #2c2138;background:#09060dcc;position:sticky;top:0;height:100vh}
+.logo{font-weight:900;font-size:20px;margin:5px 8px 30px}.logo b{color:#ff39b8}.nav button{display:block;width:100%;padding:13px;margin:5px 0;border:0;border-radius:12px;background:transparent;color:#a99eb7;text-align:left;font-size:14px}.nav button:hover,.nav .on{background:#9b5cff20;color:white}
+.main{min-width:0}.top{height:70px;border-bottom:1px solid #2c2138;display:flex;align-items:center;gap:15px;padding:0 25px;background:#09060dcc;position:sticky;top:0;z-index:5}.search{flex:1;max-width:450px;padding:11px 14px;border:1px solid #30243b;border-radius:12px;background:#100b16;color:white}.account{margin-left:auto;padding:10px 13px;border:1px solid #30243b;border-radius:12px;background:#120d18;color:white}
+.content{max-width:1200px;margin:auto;padding:28px}.hero{display:grid;grid-template-columns:1.3fr .7fr;gap:18px}.card{background:#100b16dd;border:1px solid #30243b;border-radius:22px;padding:22px;box-shadow:0 18px 55px #0007}
+h1{font-size:clamp(38px,6vw,66px);line-height:.98;margin:20px 0 12px;letter-spacing:-2px}.grad{background:linear-gradient(90deg,#ff39b8,#9b5cff,#31e7ff);-webkit-background-clip:text;color:transparent}
+.muted{color:#a99eb7;line-height:1.6}.badge{display:inline-block;border:1px solid #4b3658;border-radius:99px;padding:7px 11px;font-size:12px;color:#ddd}.btn{padding:12px 16px;border:0;border-radius:12px;font-weight:800;color:#fff;background:linear-gradient(90deg,#ff39b8,#9b5cff)}.ghost{padding:11px 15px;border:1px solid #30243b;border-radius:12px;background:#120d18;color:#fff}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:20px}
+.visual{min-height:270px;display:grid;place-items:center;overflow:hidden;background:radial-gradient(circle,#28183c,transparent 58%),#0c0811}.orb{width:145px;height:145px;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff,#ff39b8 18%,#9b5cff 50%,#151020 72%);box-shadow:0 0 70px #ff39b866;animation:pulse 3s infinite}.bars{position:absolute;bottom:25px;display:flex;gap:4px;align-items:center}.bars i{width:4px;height:25px;background:linear-gradient(#31e7ff,#ff39b8);border-radius:8px;animation:b 1s infinite}.bars i:nth-child(2n){animation-delay:.15s}.bars i:nth-child(3n){animation-delay:.3s}@keyframes pulse{50%{transform:scale(1.08)}}@keyframes b{50%{height:48px}}
+.grid{display:grid;grid-template-columns:1fr .75fr;gap:18px;margin-top:18px}.prompt{width:100%;min-height:145px;background:#0a0710;border:1px solid #342740;border-radius:14px;color:white;padding:15px;resize:vertical;outline:0}.controls{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:14px}.field label{display:block;color:#c8bbd2;font-size:12px;margin-bottom:6px}.field select,.field input{width:100%;background:#0a0710;border:1px solid #342740;color:#fff;border-radius:10px;padding:10px}.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}.chip{padding:8px 10px;border-radius:99px;border:1px solid #342740;background:#0d0912;color:#cfc4d8}.chip.on{border-color:#ff39b8;background:#ff39b815;color:white}
+.generate{width:100%;margin-top:16px;padding:14px;border:0;border-radius:13px;color:#fff;font-weight:900;background:linear-gradient(90deg,#ff39b8,#9b5cff);font-size:15px}.progress{display:none;margin-top:12px}.pb{height:7px;background:#251a2e;border-radius:99px;overflow:hidden}.fill{height:100%;width:0;background:linear-gradient(90deg,#ff39b8,#31e7ff)}
+.track{margin-top:8px;padding:15px;border:1px solid #382844;border-radius:15px;background:#160e20}.cover{width:58px;height:58px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,#ff39b8,#9b5cff,#31e7ff);font-size:25px}.tracktop{display:flex;gap:12px;align-items:center}.track h3{margin:0 0 5px}.track small{color:#a99eb7}.player{display:flex;gap:10px;align-items:center;margin-top:18px}.play{width:42px;height:42px;border:0;border-radius:50%;font-weight:900}.wave{display:flex;gap:2px;align-items:center;height:45px;flex:1}.wave i{flex:1;height:var(--h);background:#74518d;border-radius:4px}.tiny{padding:8px 10px;border:1px solid #30243b;border-radius:9px;background:#100b16;color:#fff;font-size:12px}
+.tabs{display:flex;gap:4px;overflow:auto;margin-top:18px}.tab{padding:10px 14px;border:0;background:transparent;color:#a99eb7;border-bottom:2px solid transparent}.tab.active{color:white;border-color:#ff39b8}.tabbody{display:none}.tabbody.active{display:block;margin-top:8px}.lyrics{white-space:pre-line;line-height:1.8;background:#0a0710;border:1px solid #30243b;border-radius:13px;padding:16px}
+.library{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.song{border:1px solid #30243b;border-radius:15px;padding:13px;background:#0d0913}.songpic{height:90px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,#29153d,#111c30);font-size:28px;margin-bottom:9px}.song small{display:block;color:#a99eb7;margin:4px 0 9px}
+.bottom{position:fixed;left:240px;right:0;bottom:0;height:75px;background:#09060df2;border-top:1px solid #2c2138;display:flex;align-items:center;gap:12px;padding:8px 20px;z-index:10}.bottom .cover{width:50px;height:50px}.info{width:190px}.info b,.info small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.info small{color:#a99eb7}.seek{height:4px;background:#2a2032;flex:1}.seek div{width:18%;height:100%;background:linear-gradient(90deg,#ff39b8,#31e7ff)}
+.page{display:none}.page.show{display:block}
+@media(max-width:850px){.app{grid-template-columns:1fr}.side{position:fixed;left:-250px;width:240px;z-index:20;transition:.2s}.side.open{left:0}.bottom{left:0}.hero,.grid{grid-template-columns:1fr}.top{padding:0 13px}.library{grid-template-columns:1fr 1fr}.content{padding:16px}}
+@media(max-width:520px){.controls{grid-template-columns:1fr}.library{grid-template-columns:1fr}.bottom{padding:7px 10px}.info{width:125px}.seek{display:none}}
+
+/* PREMIUM V2 VISUAL UPGRADE */
+body{overflow-x:hidden}
+.ambient{position:fixed;border-radius:50%;filter:blur(95px);pointer-events:none;z-index:-1;opacity:.11;will-change:transform}.a1{width:330px;height:330px;background:#ff39b8;left:-120px;top:15%;animation:float1 16s ease-in-out infinite alternate}.a2{width:390px;height:390px;background:#6945ff;right:-170px;top:45%;animation:float2 20s ease-in-out infinite alternate}.a3{width:260px;height:260px;background:#31e7ff;left:42%;bottom:-180px;animation:float3 18s ease-in-out infinite alternate}
+@keyframes float1{to{transform:translate(110px,80px) scale(1.18)}}@keyframes float2{to{transform:translate(-100px,-80px) scale(1.12)}}@keyframes float3{to{transform:translate(80px,-120px) scale(1.2)}}
+.logo{display:flex;align-items:center;gap:10px}.logoIcon{display:grid;place-items:center;width:39px;height:39px;border-radius:13px;background:linear-gradient(135deg,#ff39b8,#9b5cff 65%,#31e7ff);box-shadow:0 0 28px #ff39b84d;font-size:21px}
+.studioStatus{font-size:9px;letter-spacing:1.5px;color:#8f839c;margin:0 8px 20px}.studioStatus span{display:inline-block;width:6px;height:6px;border-radius:50%;background:#62f5a7;box-shadow:0 0 9px #62f5a7;margin-right:6px}
+.top{gap:18px}.crumb{font-size:13px;color:#8f839c}.crumb b{color:#eee}.topActions{display:flex;align-items:center;gap:8px;margin-left:auto}.search{display:flex;align-items:center;gap:7px;max-width:270px;padding:9px 12px}.search input{border:0;outline:0;background:transparent;color:white;width:100%}.iconTop{border:1px solid #30243b;background:#100b16;color:#d8cedf;border-radius:11px;width:39px;height:39px}.account{display:flex;align-items:center;gap:7px}.avatar{display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:linear-gradient(135deg,#31e7ff,#9b5cff);font-size:10px;font-weight:900}
+.heroCard{padding:31px}.heroTop{display:flex;justify-content:space-between;align-items:center}.badge i{display:inline-block;width:6px;height:6px;border-radius:50%;background:#62f5a7;box-shadow:0 0 10px #62f5a7;margin-left:4px}.credits{font-size:11px;color:#bdb0c9;border:1px solid #332740;border-radius:99px;padding:7px 10px;background:#0c0811}
+.eyebrow{font-size:9px;letter-spacing:2px;color:#9e8ead;font-weight:800;margin-bottom:5px}.hero h1{margin-top:13px}
+.visual{position:relative;background:radial-gradient(circle at center,#27133b 0,#140b1e 35%,#0b0710 68%);border-color:#392744}.visualLabel{position:absolute;top:17px;left:19px;font-size:9px;letter-spacing:2px;color:#857990}.orbit{position:absolute;border:1px solid #a65dff36;border-radius:50%;width:205px;height:205px}.o1{transform:rotate(55deg) scaleY(.48)}.o2{transform:rotate(-55deg) scaleY(.48);border-color:#31e7ff2b}.visualBottom{position:absolute;left:18px;right:18px;bottom:15px;display:flex;justify-content:space-between;font-size:10px;color:#887c94}.visualBottom span:first-child{color:#62f5a7}
+.sectionHead{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:15px}.sectionHead h2{margin:2px 0 0}.step,.liveBadge{font-size:9px;letter-spacing:1.5px;color:#8e829a;border:1px solid #30243b;padding:6px 8px;border-radius:8px}.liveBadge{color:#62f5a7;border-color:#294b3b}
+.promptWrap{position:relative}.promptWrap>span{position:absolute;left:13px;top:13px;color:#ff39b8;z-index:1}.promptWrap .prompt{padding-left:34px}.magicPrompt{position:absolute;right:10px;bottom:10px;border:1px solid #3c2a4a;background:#17101f;color:#fff;border-radius:8px;padding:7px 9px;font-size:11px}
+.coverArt{display:flex;gap:12px;align-items:center}.coverArt>.cover{width:76px;height:76px;flex:none;background:linear-gradient(145deg,#ff39b8,#742eff 50%,#31e7ff);box-shadow:0 12px 30px #0008}.coverArt>.cover:after{content:"";width:30px;height:30px;border:2px solid #fff8;border-radius:50%;position:absolute}.coverArt>span{font-size:8px;letter-spacing:2px;color:#75687f;display:none}.tracktop{flex:1}.trackText{width:100%}.trackTag{display:inline-block;font-size:8px;letter-spacing:1.5px;color:#31e7ff;border:1px solid #31e7ff30;padding:4px 6px;border-radius:5px;margin-bottom:6px}.trackMetaRow{display:flex;justify-content:space-between;margin-top:15px;padding-top:12px;border-top:1px solid #2b2035;color:#82758d;font-size:10px}
+.track{background:linear-gradient(145deg,#171020,#0f0a15);box-shadow:inset 0 1px #ffffff08}.resultCard{min-height:100%}
+@media(max-width:850px){.crumb{display:none}.topActions{flex:1}.topActions .search{max-width:none;flex:1}.iconTop{display:none}}
+@media(max-width:520px){.heroTop .credits{display:none}.heroCard{padding:22px}.visual{min-height:235px}.magicPrompt{position:static;margin-top:7px;width:100%}.promptWrap .prompt{padding-left:32px}}
+
+</style>
+<style id="suno-inspired-overrides">
+:root{
+  --bg:#0b0b0b!important;
+  --panel:#151515!important;
+  --panel2:#1b1b1b!important;
+  --line:#2a2a2a!important;
+  --text:#f5f5f5!important;
+  --muted:#9a9a9a!important;
+  --accent:#ff4f8b!important;
+  --accent2:#ff7a59!important;
+  --glow:rgba(255,79,139,.22)!important;
+}
+body{
+  background:
+    radial-gradient(900px 520px at 78% -8%,rgba(255,79,139,.10),transparent 60%),
+    radial-gradient(800px 500px at 5% 105%,rgba(255,122,89,.07),transparent 60%),
+    #0b0b0b!important;
+  color:#f5f5f5!important;
+}
+body:before,body:after{opacity:.18!important}
+.sidebar{
+  background:rgba(12,12,12,.96)!important;
+  border-right:1px solid #242424!important;
+  backdrop-filter:blur(18px)!important;
+}
+.logo{
+  letter-spacing:-.04em!important;
+}
+.logo span,.brand-accent{
+  color:#ff5b91!important;
+}
+.nav a{
+  color:#8f8f8f!important;
+  border-radius:10px!important;
+}
+.nav a:hover,.nav a.active{
+  background:#1b1b1b!important;
+  color:#fff!important;
+}
+.nav a.active{
+  box-shadow:inset 3px 0 0 #ff5b91!important;
+}
+.topbar{
+  background:rgba(11,11,11,.82)!important;
+  border-bottom:1px solid #202020!important;
+}
+.search{
+  background:#151515!important;
+  border:1px solid #282828!important;
+  border-radius:10px!important;
+}
+.hero,.card,.generator,.studio-panel,.song-card,.library-card,.discover-card,.writer-card,.admin-card{
+  background:linear-gradient(145deg,rgba(25,25,25,.96),rgba(16,16,16,.96))!important;
+  border:1px solid #292929!important;
+  box-shadow:0 16px 45px rgba(0,0,0,.24)!important;
+  border-radius:16px!important;
+}
+.hero{
+  background:
+    radial-gradient(500px 250px at 80% 20%,rgba(255,79,139,.13),transparent 65%),
+    linear-gradient(145deg,#191919,#101010)!important;
+}
+h1,h2,h3,h4{letter-spacing:-.025em!important}
+button,.btn{
+  border-radius:9px!important;
+  font-weight:650!important;
+}
+.primary,.generate-btn,.btn-primary{
+  background:linear-gradient(90deg,#ff4f8b,#ff6b67)!important;
+  color:#fff!important;
+  box-shadow:0 8px 25px rgba(255,79,139,.20)!important;
+  border:0!important;
+}
+.primary:hover,.generate-btn:hover,.btn-primary:hover{
+  filter:brightness(1.08)!important;
+  transform:translateY(-1px)!important;
+}
+input,textarea,select{
+  background:#101010!important;
+  color:#f5f5f5!important;
+  border:1px solid #303030!important;
+  border-radius:10px!important;
+}
+textarea:focus,input:focus,select:focus{
+  outline:none!important;
+  border-color:#ff4f8b!important;
+  box-shadow:0 0 0 3px rgba(255,79,139,.10)!important;
+}
+.chip,.tag{
+  background:#1c1c1c!important;
+  border:1px solid #303030!important;
+  color:#bdbdbd!important;
+  border-radius:999px!important;
+}
+.chip.active,.tag.active{
+  background:rgba(255,79,139,.13)!important;
+  border-color:rgba(255,79,139,.55)!important;
+  color:#fff!important;
+}
+.visualizer,.orb{
+  box-shadow:0 0 70px rgba(255,79,139,.18)!important;
+}
+.waveform span,.wave span{
+  background:linear-gradient(to top,#ff4f8b,#ff8b69)!important;
+}
+.player,.mini-player{
+  background:rgba(15,15,15,.97)!important;
+  border-top:1px solid #292929!important;
+  backdrop-filter:blur(20px)!important;
+}
+.play-btn,.play{
+  background:#f5f5f5!important;
+  color:#111!important;
+}
+.muted,.meta,.subtitle{color:#929292!important}
+.badge,.status{
+  background:rgba(255,79,139,.10)!important;
+  color:#ff8aad!important;
+  border-color:rgba(255,79,139,.25)!important;
+}
+.progress,.track-progress{
+  background:#303030!important;
+}
+.progress > *, .track-progress > *{
+  background:linear-gradient(90deg,#ff4f8b,#ff7a59)!important;
+}
+@media(max-width:800px){
+  .sidebar{background:#0d0d0d!important}
+  .hero,.card,.generator,.studio-panel{border-radius:13px!important}
+}
+</style>
+
+<style id="reference-style">
+/* Reference-inspired home dashboard */
+:root{--suno-bg:#060a18;--suno-panel:#0d1428;--suno-line:#1c2a49;--suno-text:#f7f8ff;--suno-muted:#aeb8d1}
+body{background:#050914!important;color:var(--suno-text)!important;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif!important}
+body:before{background:radial-gradient(700px 420px at 60% 0%,rgba(89,55,255,.18),transparent 70%),radial-gradient(600px 420px at 90% 50%,rgba(0,184,255,.08),transparent 70%),#050914!important}
+.app{min-height:100vh}
+.side{background:rgba(4,9,22,.94)!important;border-right:1px solid #1b2946!important;width:224px!important}
+.logo{padding:18px 20px!important;font-weight:800!important}
+.logoIcon{color:#c34cff!important;text-shadow:0 0 20px #a84cff}
+.studioStatus{margin:0 18px 18px!important;color:#58d9ff!important}
+.nav button{border-radius:10px!important;color:#b7c0d8!important}
+.nav button.on,.nav button:hover{background:linear-gradient(90deg,rgba(119,48,255,.34),rgba(45,73,180,.22))!important;color:#fff!important;border:1px solid rgba(107,80,255,.38)!important}
+.main{background:transparent!important}
+.top{height:70px!important;background:rgba(4,8,20,.82)!important;border-bottom:1px solid #18243d!important}
+.crumb{display:none!important}
+.topActions{margin-left:auto}
+.search{background:#0b1224!important;border:1px solid #263657!important;border-radius:22px!important}
+.account{background:transparent!important;color:#dfe5f5!important}
+.avatar{background:linear-gradient(135deg,#ff8b52,#6b4cff)!important}
+.content{max-width:1500px!important;margin:auto!important;padding:20px!important}
+.sunoHeroRow{display:grid;grid-template-columns:minmax(0,1fr) 286px;gap:18px}
+.sunoHero{height:310px;position:relative;overflow:hidden;border:1px solid #29346a;border-radius:15px;background:
+radial-gradient(circle at 80% 40%,rgba(196,0,255,.45),transparent 26%),
+radial-gradient(circle at 45% 105%,rgba(0,166,255,.42),transparent 34%),
+linear-gradient(120deg,#111450 0%,#141048 45%,#16051d 100%);box-shadow:0 18px 55px rgba(0,0,0,.34)}
+.sunoHero:after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 40%,rgba(0,229,255,.16) 55%,transparent 68%);background-size:200% 100%;animation:heroSweep 7s linear infinite}
+@keyframes heroSweep{from{background-position:-180% 0}to{background-position:180% 0}}
+.heroCopy{position:relative;z-index:2;width:58%;padding:30px 28px}
+.sunoEyebrow{font-size:12px;color:#aeb8ff;font-weight:800;letter-spacing:.08em;margin-bottom:14px}
+.heroCopy h1{font-size:43px;line-height:1.02;margin:0 0 14px;font-weight:850;letter-spacing:-.045em}
+.heroCopy h1 span{background:linear-gradient(90deg,#ff39c8,#8c55ff,#29d7ff);-webkit-background-clip:text;color:transparent}
+.heroCopy p{max-width:580px;color:#d2d8ed;font-size:14px;line-height:1.55;margin-bottom:20px}
+.sunoStart{border:0;border-radius:24px!important;padding:12px 22px!important;background:linear-gradient(90deg,#c22cff,#347dff)!important;color:white!important;box-shadow:0 8px 28px rgba(132,47,255,.34)}
+.heroArtist{position:absolute;right:-8px;top:0;width:50%;height:100%;overflow:hidden}
+.artistSilhouette{position:absolute;right:12%;top:13%;width:190px;height:245px;border-radius:50% 50% 42% 42%;background:radial-gradient(circle at 48% 24%,#16111f 0 22%,transparent 23%),linear-gradient(120deg,#060718 25%,#0c0920 70%,#200027);filter:drop-shadow(0 0 25px #c000ff);transform:rotate(-6deg)}
+.headphones{position:absolute;z-index:2;right:11%;top:8%;width:170px;height:170px;border:12px solid #2738ff;border-bottom-color:transparent;border-radius:50%;color:transparent;box-shadow:0 0 28px #00baff}
+.musicNote{position:absolute;color:#8c5cff;font-size:42px;text-shadow:0 0 18px #a32cff;animation:noteFloat 4s ease-in-out infinite}
+.n1{left:8%;top:30%}.n2{left:30%;top:12%;animation-delay:1s}.n3{left:22%;top:52%;animation-delay:2s}
+@keyframes noteFloat{50%{transform:translateY(-14px) rotate(8deg);opacity:.65}}
+.vibeText{position:absolute;right:7%;bottom:19%;font-size:15px;line-height:1.1;transform:rotate(-8deg);color:#fff;z-index:3}
+.vibeText i{color:#ffbf55}
+.createPanel{background:linear-gradient(160deg,#0d1730,#0a1023)!important;border:1px solid #243456!important;border-radius:15px!important;padding:18px!important}
+.createPanel h2{font-size:17px;margin:0 0 18px}
+.createPanel label{display:block;font-size:12px;color:#d4dbed;margin:10px 0 6px}
+.createPanel textarea,.createPanel select{width:100%;background:#0a1226!important;border:1px solid #26375c!important;color:#edf1ff!important;border-radius:10px!important;padding:10px!important}
+.createPanel textarea{height:72px;resize:none}
+.counter{font-size:10px;color:#7d8baa;text-align:right;margin-top:-4px}
+.sunoGenerate{width:100%;margin-top:14px;border:0!important;border-radius:10px!important;padding:13px!important;background:linear-gradient(90deg,#e329bc,#ff3e9d,#4a8dff)!important;color:#fff!important;font-weight:800!important;box-shadow:0 8px 25px rgba(219,34,178,.24)}
+.sunoGenerate span{float:right}
+.featureGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin:18px 0}
+.featureCard{position:relative;text-align:left;min-height:132px;padding:16px!important;border-radius:14px!important;border:1px solid rgba(255,255,255,.08)!important;color:#fff!important}
+.featureCard.purple{background:linear-gradient(145deg,#281259,#1b1146)!important}.featureCard.blue{background:linear-gradient(145deg,#0c3b7c,#10235e)!important}.featureCard.green{background:linear-gradient(145deg,#084f55,#073d47)!important}.featureCard.pink{background:linear-gradient(145deg,#70184f,#43133f)!important}
+.featureIcon{display:block;width:35px;height:35px;padding-top:7px;text-align:center;border-radius:10px;background:rgba(255,255,255,.13);margin-bottom:9px}
+.featureCard b{display:block;font-size:15px;margin-bottom:6px}.featureCard small{display:block;color:#cbd4e7;line-height:1.35;font-size:11px;max-width:230px}.featureCard em{position:absolute;right:14px;bottom:13px;width:25px;height:25px;border-radius:50%;background:rgba(255,255,255,.16);font-style:normal;text-align:center;padding-top:4px}
+.homeSectionHead{display:flex;align-items:center;justify-content:space-between;margin:18px 0 10px}.homeSectionHead h2{font-size:18px;margin:0}.homeSectionHead button{background:none;border:0;color:#7da9ff;font-size:11px}
+.genreStrip{display:flex;gap:12px;overflow:auto;padding-bottom:3px}
+.genreTile{flex:0 0 112px;height:116px;border:1px solid #30436c;border-radius:12px;display:flex;align-items:end;padding:10px;background:linear-gradient(160deg,#5825a8,#121a45);position:relative;overflow:hidden}
+.genreTile:before{content:"♫";position:absolute;inset:8px;font-size:55px;text-align:center;padding-top:12px;opacity:.34;color:#fff}
+.genreTile b{position:relative;z-index:1;font-size:12px}.g2{background:linear-gradient(160deg,#183f73,#10192f)}.g3{background:linear-gradient(160deg,#7d205e,#20133d)}.g4{background:linear-gradient(160deg,#a02e55,#31183b)}.g5{background:linear-gradient(160deg,#78401d,#2b1b19)}.g6{background:linear-gradient(160deg,#143f89,#102153)}.g7{background:linear-gradient(160deg,#70491f,#33241b)}
+.homeColumns{display:grid;grid-template-columns:minmax(0,1fr) 286px;gap:18px;margin-top:5px}
+.trendingList{display:grid;gap:6px}
+.trend{display:grid;grid-template-columns:20px 42px minmax(0,1fr) 40px 30px 30px 30px;align-items:center;gap:8px;padding:7px 9px;background:rgba(12,22,43,.85);border:1px solid #182846;border-radius:10px}
+.trend>button{background:none;border:0;color:#8794b1;font-size:14px}.trendInfo{min-width:0}.trendInfo b,.trendInfo small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.trendInfo b{font-size:12px}.trendInfo small,time{font-size:10px;color:#8290ad}.rank{font-size:10px;color:#7583a0}.miniArt,.featuredArt{width:42px;height:42px;border-radius:8px;display:grid;place-items:center;font-size:22px;background:linear-gradient(135deg,#9d2aff,#1526a5);box-shadow:0 0 18px rgba(122,60,255,.2)}.miniArt.b{background:linear-gradient(135deg,#ff8b30,#d51d58)}.miniArt.c{background:linear-gradient(135deg,#ff36b9,#1644d5)}.miniArt.d{background:linear-gradient(135deg,#e86b30,#272020)}.miniArt.e{background:linear-gradient(135deg,#a52fff,#0b7dce)}
+.circlePlay{width:26px;height:26px;border-radius:50%!important;background:#213354!important;color:#fff!important}
+.rightHome{display:grid;gap:14px}
+.featuredCard,.premiumCard{background:linear-gradient(160deg,#0d1730,#091123)!important;border:1px solid #243557!important;border-radius:14px!important;padding:14px}
+.featuredCard h2{font-size:15px;margin:0 0 12px}.featuredTrack{display:flex;align-items:center;gap:10px}.featuredTrack>div:nth-child(2){flex:1}.featuredTrack b,.featuredTrack small{display:block}.featuredTrack small{font-size:10px;color:#7e8ca8}.featuredTrack button{border:0;background:#23355b;color:#fff;border-radius:50%;width:30px;height:30px}.miniWave{height:25px;margin-top:8px;background:repeating-linear-gradient(90deg,#9b37ff 0 2px,transparent 2px 5px);opacity:.7;clip-path:polygon(0 55%,3% 35%,6% 75%,9% 20%,12% 70%,15% 40%,18% 80%,21% 25%,24% 65%,27% 30%,30% 75%,33% 40%,36% 65%,39% 20%,42% 72%,45% 34%,48% 80%,51% 25%,54% 70%,57% 30%,60% 78%,63% 42%,66% 68%,69% 24%,72% 72%,75% 35%,78% 76%,81% 25%,84% 68%,87% 40%,90% 72%,93% 28%,96% 62%,100% 42%,100% 100%,0 100%)}
+.premiumCard{overflow:hidden;position:relative}.premiumArt{height:120px;margin:-14px -14px 14px;background:radial-gradient(circle at 60% 45%,#7a2cff,transparent 24%),linear-gradient(135deg,#07143a,#33075b);display:grid;place-items:center;font-size:60px;color:#55b9ff;text-shadow:0 0 35px #b22cff}.premiumCard h2{font-size:18px;line-height:1.05}.premiumCard p{font-size:11px;color:#c4cde0;margin:8px 0}.premiumCard p::first-letter{color:#24dfad}.premiumCard button{width:100%;margin-top:10px;border:0;border-radius:9px;padding:11px;background:linear-gradient(90deg,#ffd34e,#ffbd35);font-weight:800;color:#17120a}
+.hiddenLegacy{display:none!important}
+.bottom{background:rgba(4,8,19,.97)!important;border-top:1px solid #1b2944!important}
+@media(max-width:1100px){.sunoHeroRow,.homeColumns{grid-template-columns:1fr}.createPanel,.rightHome{width:100%}.featureGrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.side{width:220px!important}.sunoHero{height:420px}.heroCopy{width:100%;padding:22px}.heroCopy h1{font-size:34px}.heroArtist{opacity:.38;width:70%;top:90px}.featureGrid{grid-template-columns:1fr 1fr}.trend{grid-template-columns:16px 38px minmax(0,1fr) 35px 25px}.trend>button:nth-last-child(-n+2){display:none}.content{padding:12px!important}}
+</style>
+
+<style id="reference-final-polish">
+/* FINAL REFERENCE MATCH */
+body{background:#020714!important}
+.main{background:linear-gradient(180deg,#030817 0%,#020611 100%)!important}
+.sunoHome{padding-top:18px!important}
+.sunoHero{min-height:290px!important}
+.createPanel{min-height:290px!important}
+.featureCard{cursor:pointer;transition:transform .22s ease,filter .22s ease}
+.featureCard:hover{transform:translateY(-3px);filter:brightness(1.08)}
+.genreStrip{scrollbar-width:none}
+.genreStrip::-webkit-scrollbar{display:none}
+.genreTile{flex-basis:108px;height:112px;transition:transform .2s ease,border-color .2s ease}
+.genreTile:hover{transform:translateY(-3px);border-color:#6c64ff}
+.g8{background:linear-gradient(160deg,#11615c,#101e36)}
+.g9{background:linear-gradient(160deg,#8055bc,#241c53)}
+.g10{background:linear-gradient(160deg,#153f9c,#14205c)}
+.trend{min-height:45px}
+.trend:hover{background:#101d39!important;border-color:#29457a!important}
+.sunoHero,.createPanel,.featureCard,.genreTile,.featuredCard,.premiumCard{
+  backdrop-filter:blur(12px)!important
+}
+.sunoHero{box-shadow:0 0 0 1px rgba(70,100,255,.06),0 25px 70px rgba(0,0,0,.38)!important}
+.sunoHero:before{
+ content:"";position:absolute;inset:-30%;z-index:0;pointer-events:none;
+ background:radial-gradient(circle at 50% 45%,rgba(132,45,255,.18),transparent 30%);
+ animation:referencePulse 6s ease-in-out infinite alternate
+}
+@keyframes referencePulse{from{transform:scale(.92);opacity:.55}to{transform:scale(1.08);opacity:1}}
+.heroCopy,.heroArtist{z-index:2}
+.createPanel{box-shadow:inset 0 1px 0 rgba(255,255,255,.03),0 18px 50px rgba(0,0,0,.28)!important}
+@media(min-width:1200px){
+ .sunoHeroRow{grid-template-columns:minmax(0,1fr) 286px!important}
+ .homeColumns{grid-template-columns:minmax(0,1fr) 286px!important}
+}
+</style>
+</head>
+<body>
+<div class="ambient a1"></div><div class="ambient a2"></div><div class="ambient a3"></div>
+<div class="app">
+<aside class="side" id="side"><div class="logo"><span class="logoIcon">♫</span><span>4TVIBEZ <b>AI</b></span></div>
+<div class="studioStatus"><span></span> LIVE AI STUDIO</div><nav class="nav">
+<button class="on" onclick="page('studio',this)">🎛️ AI Studio</button><button onclick="page('discover',this)">🌍 Discover</button><button onclick="page('library',this)">📚 My Library</button><button onclick="page('playlists',this)">💿 Playlists</button><button onclick="page('writer',this)">✍️ AI Songwriter</button><button onclick="page('admin',this)">🔐 Admin</button></nav>
+</aside>
+<main class="main"><header class="top"><button class="ghost menuBtn" onclick="side()">☰</button>
+<div class="crumb"><span>Workspace</span><b> / AI Studio</b></div>
+<div class="topActions"><div class="search">⌕ <input placeholder="Search songs, artists, genres..."></div>
+<button class="iconTop">♡</button><button class="iconTop">🔔</button>
+<button class="account" onclick="alert('Account login will be connected in the backend version.')"><span class="avatar">4T</span> Account</button></div></header>
+
+<section id="studio" class="content page show sunoHome">
+  <div class="sunoHeroRow">
+    <div class="sunoHero">
+      <div class="heroGlow"></div>
+      <div class="heroCopy">
+        <div class="sunoEyebrow">✦ AI POWERED&nbsp; • &nbsp;INFINITE CREATIVITY</div>
+        <h1>Turn Your Ideas<br>Into <span>Music</span></h1>
+        <p>Create original songs with the power of AI. Just describe, choose a style, and let the music come to life!</p>
+        <button class="sunoStart" onclick="document.getElementById('prompt').focus()">▶ <b>Start Creating</b></button>
+      </div>
+      <div class="heroArtist">
+        <div class="headphones">◉</div>
+        <div class="artistSilhouette"></div>
+        <div class="musicNote n1">♪</div><div class="musicNote n2">♫</div><div class="musicNote n3">♪</div>
+        <div class="vibeText">Your Vibe<br><i>Your Music</i></div>
+      </div>
+    </div>
+
+    <aside class="createPanel">
+      <h2>Create Your Song</h2>
+      <label>Describe your song</label>
+      <textarea id="prompt" maxlength="500" placeholder="e.g. A romantic Afrobeats song about love and never giving up..."></textarea>
+      <div class="counter">0/500</div>
+      <label>Select Genre</label>
+      <select id="homeGenre"><option>Afrobeats</option><option>Amapiano</option><option>Highlife</option><option>R&B</option><option>Hip-Hop</option><option>Pop</option><option>Dancehall</option><option>Gospel</option></select>
+      <label>Mood</label>
+      <select id="mood"><option>Romantic</option><option>Emotional</option><option>Happy</option><option>Energetic</option><option>Dark</option><option>Chill</option><option>Inspirational</option></select>
+      <label>Duration</label>
+      <select><option>2-3 minutes</option><option>3-4 minutes</option><option>4-5 minutes</option></select>
+      <button class="sunoGenerate" id="gen" onclick="generate()">✦ Generate Music <span>→</span></button>
+      <div class="progress" id="progress"><div id="status">Preparing AI...</div><div class="pb"><div class="fill" id="fill"></div></div></div>
+    </aside>
+  </div>
+
+  <div class="featureGrid">
+    <button class="featureCard purple" onclick="document.getElementById('prompt').focus()"><span class="featureIcon">☷</span><b>Text to Music</b><small>Turn your ideas into full songs with lyrics and melody.</small><em>→</em></button>
+    <button class="featureCard blue" onclick="document.getElementById('prompt').focus()"><span class="featureIcon">♫</span><b>Lyrics to Music</b><small>Have lyrics? We'll add the perfect beat and vocals.</small><em>→</em></button>
+    <button class="featureCard green" onclick="alert('Image to Music will be connected in the production version.')"><span class="featureIcon">▧</span><b>Image to Music</b><small>Upload an image and get a unique soundtrack.</small><em>→</em></button>
+    <button class="featureCard pink" onclick="alert('Voice Clone will be connected securely in the production version.')"><span class="featureIcon">♩</span><b>Voice Clone</b><small>Use your own voice or any voice you like.</small><em>→</em></button>
+  </div>
+
+  <div class="homeSectionHead"><h2>Popular Genres</h2><button onclick="page('discover',document.querySelector('.nav button:nth-child(2)'))">View all →</button></div>
+  <div class="genreStrip">
+  <div class="genreTile g1"><b>Afrobeats</b></div>
+  <div class="genreTile g2"><b>Amapiano</b></div>
+  <div class="genreTile g3"><b>Highlife</b></div>
+  <div class="genreTile g4"><b>R&B</b></div>
+  <div class="genreTile g5"><b>Hip Hop</b></div>
+  <div class="genreTile g6"><b>Pop</b></div>
+  <div class="genreTile g7"><b>Dancehall</b></div>
+  <div class="genreTile g8"><b>Reggae</b></div>
+  <div class="genreTile g9"><b>Gospel</b></div>
+  <div class="genreTile g10"><b>EDM</b></div>
+</div>
+
+  <div class="homeColumns">
+    <div>
+      <div class="homeSectionHead"><h2>Trending Now</h2><button>View all →</button></div>
+      <div class="trendingList">
+        <div class="trend"><span class="rank">1</span><div class="miniArt a">♫</div><div class="trendInfo"><b>Midnight Thoughts</b><small>4tvibez • R&B • Chill</small></div><time>3:21</time><button class="circlePlay" onclick="play()">▶</button><button>♡</button><button>⇩</button><button>•••</button></div>
+        <div class="trend"><span class="rank">2</span><div class="miniArt b">♪</div><div class="trendInfo"><b>Summer Vibes</b><small>AI Music • Afrobeats • Happy</small></div><time>2:45</time><button class="circlePlay" onclick="play()">▶</button><button>♡</button><button>⇩</button><button>•••</button></div>
+        <div class="trend"><span class="rank">3</span><div class="miniArt c">♫</div><div class="trendInfo"><b>Lost in Your Eyes</b><small>AI Music • Pop • Romantic</small></div><time>3:12</time><button class="circlePlay" onclick="play()">▶</button><button>♡</button><button>⇩</button><button>•••</button></div>
+        <div class="trend"><span class="rank">4</span><div class="miniArt d">♪</div><div class="trendInfo"><b>No More Tears</b><small>AI Music • Hip-Hop • Emotional</small></div><time>3:38</time><button class="circlePlay" onclick="play()">▶</button><button>♡</button><button>⇩</button><button>•••</button></div>
+        <div class="trend"><span class="rank">5</span><div class="miniArt e">♫</div><div class="trendInfo"><b>Dreams</b><small>AI Music • EDM • Uplifting</small></div><time>3:05</time><button class="circlePlay" onclick="play()">▶</button><button>♡</button><button>⇩</button><button>•••</button></div>
+      </div>
+    </div>
+
+    <aside class="rightHome">
+      <div class="featuredCard"><h2>Featured</h2><div class="featuredTrack"><div class="featuredArt">♫</div><div><b>Midnight Vibes</b><small>4tvibez</small></div><button onclick="play()">▶</button></div><div class="miniWave"></div></div>
+      <div class="premiumCard"><div class="premiumArt">◉</div><h2>Unlimited Music<br>With Premium</h2><p>✓ Unlimited generations</p><p>✓ High-quality audio (320kbps)</p><p>✓ No watermarks</p><p>✓ Access to exclusive voices</p><p>✓ Priority support</p><button>♛ Upgrade Now</button></div>
+    </aside>
+  </div>
+
+  <div class="hiddenLegacy">
+    <div id="genres" class="chips"><button class="chip on">Afrobeats</button><button class="chip">Amapiano</button><button class="chip">Highlife</button><button class="chip">R&B</button></div>
+    <select id="vocal"><option>Male — Soulful</option><option>Female — Powerful</option></select>
+    <input id="bpm" type="range" min="70" max="160" value="105">
+    <div id="wave"></div><div id="bars"></div>
+  </div>
+</section>
+
+<section id="library" class="content page"><div class="card"><h2>📚 My Library</h2><p class="muted">Your saved AI creations will appear here.</p><div class="library" id="lib"></div></div></section>
+<section id="discover" class="content page"><div class="card"><h1>Discover <span class="grad">new sounds.</span></h1><p class="muted">Explore creators, songs, remixes, competitions and emerging talent.</p><div class="library"><div class="song"><div class="songpic">🌍</div><b>Global Afrobeats</b><small>Trending</small></div><div class="song"><div class="songpic">🔥</div><b>Creator Challenge</b><small>12K entries</small></div><div class="song"><div class="songpic">🏆</div><b>4TVIBEZ Awards</b><small>Coming soon</small></div></div></div></section>
+<section id="playlists" class="content page"><div class="card"><h2>💿 Playlists</h2><p class="muted">Create and organize your favorite AI songs.</p><button class="btn" onclick="alert('Playlist creator demo')">+ Create Playlist</button></div></section>
+<section id="writer" class="content page"><div class="card"><h2>✍️ AI Songwriter</h2><textarea class="prompt" placeholder="Write your story, idea or rough lyrics..."></textarea><div class="actions"><button class="btn" onclick="alert('AI lyrics demo ready')">✨ Generate Lyrics</button><button class="ghost">🌍 Translate</button><button class="ghost">📝 Improve Rhymes</button></div></div></section>
+<section id="admin" class="content page"><div class="card"><h2>🔐 Admin Dashboard</h2><p class="muted">Private platform-owner area. User management, songs, reports, AI settings, plans and announcements will be connected to the secure backend.</p><div class="library"><div class="song"><b>Users</b><h2>1,284</h2></div><div class="song"><b>Songs</b><h2>9,742</h2></div><div class="song"><b>Creators</b><h2>438</h2></div></div></div></section>
+</main></div>
+<div class="bottom"><div class="cover">♫</div><div class="info"><b id="bottomName">Still Loving You</b><small>4TVIBEZ AI • Demo</small></div><button class="play" onclick="play()">▶</button><div class="seek"><div></div></div><span>♡</span><span>⋯</span></div>
+<script>
+const q=s=>document.querySelector(s);const qa=s=>document.querySelectorAll(s);
+for(let i=0;i<45;i++){let e=document.createElement('i');e.style.height=(10+Math.random()*42)+'px';q('#bars').appendChild(e)}
+for(let i=0;i<32;i++){let e=document.createElement('i');e.style.setProperty('--h',(8+Math.random()*35)+'px');q('#wave').appendChild(e)}
+qa('.chip').forEach(x=>x.onclick=()=>{x.parentElement.querySelectorAll('.chip').forEach(y=>y.classList.remove('on'));x.classList.add('on')});
+function side(){q('#side').classList.toggle('open')}
+function page(id,b){qa('.page').forEach(x=>x.classList.remove('show'));q('#'+id).classList.add('show');qa('.nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');q('#side').classList.remove('open');scrollTo(0,0)}
+function tab(b,id){qa('.tab').forEach(x=>x.classList.remove('active'));qa('.tabbody').forEach(x=>x.classList.remove('active'));b.classList.add('active');q('#'+id).classList.add('active')}
+function demo(){q('#prompt').value='Emotional Afrobeats love song about two people who separated but still love each other. Warm guitar, deep bass, soulful male vocals and a powerful catchy chorus.'}
+function play(){let b=q('.bottom .play');let p=q('.track .play');let on=p.textContent==='▶';p.textContent=on?'❚❚':'▶';b.textContent=on?'❚❚':'▶'}
+async function generate(){
+  const prompt=q('#prompt')?.value.trim();
+  if(!prompt){alert('Please describe your song first.');return}
+  const btn=q('#gen'), progress=q('#progress'), fill=q('#fill'), status=q('#status');
+  progress.style.display='block'; btn.disabled=true; btn.innerHTML='⏳ Creating...'; fill.style.width='5%';
+  const genre=q('#homeGenre')?.value || 'Afrobeats';
+  const mood=q('#mood')?.value || 'Romantic';
+  const duration=q('.createPanel select:nth-of-type(3)')?.value || '2-3 minutes';
+  let pct=5;
+  const timer=setInterval(()=>{pct=Math.min(pct+2,90);fill.style.width=pct+'%';status.textContent=pct<25?'Connecting to the AI music engine...':pct<50?'Composing melody and rhythm...':pct<72?'Building vocals and arrangement...':'Finishing your master...'},900);
+  try{
+    const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,genre,mood,duration})});
+    const text=await r.text(); let data={}; try{data=JSON.parse(text)}catch(_){}
+    if(!r.ok) throw new Error(data.error||`Server returned ${r.status}`);
+    if(!data.predictionId) throw new Error('The server did not return a generation ID.');
+    status.textContent='AI is generating your song...';
+    for(let i=0;i<100;i++){
+      await new Promise(resolve=>setTimeout(resolve,3000));
+      const sr=await fetch('/api/generate/'+encodeURIComponent(data.predictionId));
+      const sd=await sr.json();
+      if(sd.status==='succeeded' && sd.audio){
+        clearInterval(timer); fill.style.width='100%'; status.textContent='✓ Your song is ready'; btn.disabled=false; btn.innerHTML='✦ Generate Music <span>→</span>'; showGeneratedSong(sd.audio,genre,mood); return;
+      }
+      if(sd.status==='failed' || sd.status==='canceled') throw new Error(sd.error||'The AI provider could not generate the song.');
+    }
+    throw new Error('The generation is taking longer than expected. Please try again shortly.');
+  }catch(e){
+    clearInterval(timer); fill.style.width='0%';
+    let message=e.message||'Generation failed.';
+    if(e instanceof TypeError && /fetch/i.test(message)) message='Cannot reach the AI server. If you opened this HTML file directly, deploy this backend to Railway and open the Railway website URL instead.';
+    status.textContent='✕ '+message; btn.disabled=false; btn.innerHTML='✦ Generate Music <span>→</span>';
+  }
+}
+function showGeneratedSong(url,genre,mood){
+  let box=q('#realGenerated');
+  if(!box){box=document.createElement('div');box.id='realGenerated';box.className='card';box.style.cssText='margin-top:18px;padding:18px;background:linear-gradient(135deg,#111a38,#170b28);border:1px solid #394a86;border-radius:14px';q('.sunoHome').prepend(box)}
+  box.innerHTML=`<div style="display:flex;align-items:center;gap:12px"><div style="font-size:28px">🎵</div><div style="flex:1"><b style="font-size:16px">Your AI song is ready</b><div style="font-size:11px;color:#9eabc8;margin-top:4px">${genre} • ${mood} • Original AI generation</div></div></div><audio controls style="width:100%;margin-top:14px" src="${url}"></audio><div style="display:flex;gap:8px;margin-top:10px"><a href="${url}" target="_blank" download class="btn">⬇ Download MP3</a></div>`;
+  q('#bottomName').textContent='AI Creation — '+genre;
+  box.scrollIntoView({behavior:'smooth',block:'center'});
+}
+const songs=['Still Loving You','Midnight Dreams','Accra Nights','Rise Again','Ocean of Stars','No Turning Back'];q('#lib').innerHTML=songs.map(x=>'<div class="song"><div class="songpic">♫</div><b>'+x+'</b><small>AI Creation</small><button class="tiny" onclick="alert(\'Playing '+x+'\')">▶ Play</button></div>').join('');
+</script>
+<style id="animated-suno-background">
+html,body{min-height:100%;background:#090909!important}
+body{position:relative;overflow-x:hidden!important}
+body::before{
+  content:"";position:fixed;inset:-25%;z-index:-3;pointer-events:none;
+  background:
+    radial-gradient(circle at 15% 25%,rgba(255,70,135,.18),transparent 23%),
+    radial-gradient(circle at 82% 18%,rgba(255,120,70,.14),transparent 24%),
+    radial-gradient(circle at 72% 82%,rgba(170,70,255,.10),transparent 26%),
+    radial-gradient(circle at 20% 90%,rgba(255,70,135,.08),transparent 22%);
+  filter:blur(30px);
+  animation:studioDrift 16s ease-in-out infinite alternate;
+}
+body::after{
+  content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:
+    linear-gradient(115deg,transparent 0%,rgba(255,255,255,.025) 45%,transparent 52%),
+    radial-gradient(ellipse at center,transparent 25%,rgba(0,0,0,.42) 100%);
+  background-size:180% 100%,100% 100%;
+  animation:lightSweep 12s linear infinite;
+}
+.suno-bg-orb{
+  position:fixed;width:180px;height:180px;border-radius:50%;
+  pointer-events:none;z-index:-1;filter:blur(55px);opacity:.20;
+}
+.suno-bg-orb.one{left:4%;top:18%;background:#ff4f8b;animation:orbOne 13s ease-in-out infinite}
+.suno-bg-orb.two{right:5%;top:55%;background:#ff7959;animation:orbTwo 17s ease-in-out infinite}
+.suno-bg-orb.three{left:45%;bottom:-5%;background:#9b5cff;animation:orbThree 20s ease-in-out infinite}
+@keyframes studioDrift{
+  0%{transform:translate3d(-4%,-2%,0) scale(1)}
+  50%{transform:translate3d(3%,4%,0) scale(1.08)}
+  100%{transform:translate3d(-2%,1%,0) scale(1.03)}
+}
+@keyframes lightSweep{
+  0%{background-position:-180% 0,0 0}
+  100%{background-position:180% 0,0 0}
+}
+@keyframes orbOne{
+  0%,100%{transform:translate(0,0) scale(.8);opacity:.13}
+  50%{transform:translate(90px,70px) scale(1.35);opacity:.28}
+}
+@keyframes orbTwo{
+  0%,100%{transform:translate(0,0) scale(1);opacity:.14}
+  50%{transform:translate(-100px,-80px) scale(1.3);opacity:.25}
+}
+@keyframes orbThree{
+  0%,100%{transform:translate(0,20px) scale(.8);opacity:.10}
+  50%{transform:translate(70px,-90px) scale(1.35);opacity:.22}
+}
+@media(prefers-reduced-motion:reduce){
+  body::before,body::after,.suno-bg-orb{animation:none!important}
+}
+</style>
+<div class="suno-bg-orb one"></div>
+<div class="suno-bg-orb two"></div>
+<div class="suno-bg-orb three"></div>
+</body></html>
