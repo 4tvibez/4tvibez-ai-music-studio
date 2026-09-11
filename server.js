@@ -90,7 +90,7 @@ app.post("/api/generate", async (req, res) => {
     const inputs = [
       "acestep-v15-xl-turbo",
       "custom",
-      null,
+      finalPrompt,
       vocalLanguage,
       finalPrompt,
       finalLyrics,
