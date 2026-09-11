@@ -238,7 +238,7 @@ app.post("/api/generate", async (req, res) => {
       "acestep-v15-xl-turbo",
 
       // 2 generation mode
-      "Simple",
+      "simple",
 
       // 3 simple query
       finalPrompt,
