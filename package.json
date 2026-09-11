@@ -1,7 +1,6 @@
 {
   "name": "4tvibez-ai-music-studio",
   "version": "1.0.0",
-  "type": "module",
   "scripts": {
     "start": "node server.js"
   },
