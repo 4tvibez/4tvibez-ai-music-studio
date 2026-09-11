@@ -138,13 +138,11 @@ app.post("/api/generate", async (req, res) => {
       null,
       false
     ];
-
-    const job = client.submit(
-      "/generation_wrapper",
-      {
-        data: inputs
-      }
-    );
+    
+const job = client.submit(
+  "/generation_wrapper",
+  inputs
+);
 
     // Create our own ID for the browser.
     // The job itself remains stored on this server.
