@@ -4,15 +4,11 @@ import { Client } from "@gradio/client";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Official ACE-Step 1.5 Hugging Face Space
 const HF_SPACE = "ACE-Step/Ace-Step-v1.5";
 
 app.use(express.json({ limit: "4mb" }));
-
-// Serve the website
 app.use(express.static("."));
 
-// Store jobs in memory
 global.musicJobs = global.musicJobs || new Map();
 
 let aceClient = null;
@@ -71,19 +67,17 @@ Let the music carry on`;
 }
 
 /* =========================================================
-   FIND AUDIO URL INSIDE ANY GRADIO RESPONSE
+   FIND AUDIO URL
 ========================================================= */
 
 function findAudioUrl(value, seen = new Set()) {
   if (value == null) return null;
 
-  // Prevent circular objects
   if (typeof value === "object") {
     if (seen.has(value)) return null;
     seen.add(value);
   }
 
-  // Direct string
   if (typeof value === "string") {
     const text = value.trim();
 
@@ -97,21 +91,19 @@ function findAudioUrl(value, seen = new Set()) {
     return null;
   }
 
-  // Arrays
   if (Array.isArray(value)) {
     for (const item of value) {
       const found = findAudioUrl(item, seen);
+
       if (found) return found;
     }
 
     return null;
   }
 
-  // Objects
   if (typeof value === "object") {
 
-    // Common Gradio audio/file properties
-    const possibleKeys = [
+    const keys = [
       "url",
       "audio",
       "file",
@@ -122,28 +114,25 @@ function findAudioUrl(value, seen = new Set()) {
       "orig_name"
     ];
 
-    for (const key of possibleKeys) {
-      if (value[key] != null) {
-        const found = findAudioUrl(value[key], seen);
+    for (const key of keys) {
 
-        if (found) {
-          return found;
-        }
+      if (value[key] != null) {
+
+        const found =
+          findAudioUrl(value[key], seen);
+
+        if (found) return found;
       }
     }
 
-    // Search all remaining properties
     for (const [key, child] of Object.entries(value)) {
 
-      if (possibleKeys.includes(key)) {
-        continue;
-      }
+      if (keys.includes(key)) continue;
 
-      const found = findAudioUrl(child, seen);
+      const found =
+        findAudioUrl(child, seen);
 
-      if (found) {
-        return found;
-      }
+      if (found) return found;
     }
   }
 
@@ -151,10 +140,11 @@ function findAudioUrl(value, seen = new Set()) {
 }
 
 /* =========================================================
-   HEALTH CHECK
+   HEALTH
 ========================================================= */
 
 app.get("/api/health", async (_req, res) => {
+
   try {
 
     const client = await getClient();
@@ -169,23 +159,21 @@ app.get("/api/health", async (_req, res) => {
 
   } catch (error) {
 
-    console.error("Health check failed:", error);
+    console.error("Health error:", error);
 
-    // Force reconnect next time
     aceClient = null;
 
     res.status(503).json({
       ok: false,
-      provider: "ACE-Step 1.5",
       error:
         error?.message ||
-        "ACE-Step is currently unavailable."
+        "ACE-Step is unavailable."
     });
   }
 });
 
 /* =========================================================
-   START GENERATION
+   GENERATE MUSIC
 ========================================================= */
 
 app.post("/api/generate", async (req, res) => {
@@ -198,12 +186,8 @@ app.post("/api/generate", async (req, res) => {
       mood = "Romantic",
       lyrics = "",
       key = "",
-      vocalLanguage = "unknown"
+      vocalLanguage = "en"
     } = req.body || {};
-
-    /* -----------------------------------------------------
-       VALIDATE
-    ----------------------------------------------------- */
 
     if (!String(prompt).trim()) {
 
@@ -211,225 +195,228 @@ app.post("/api/generate", async (req, res) => {
         ok: false,
         error: "Please describe your song first."
       });
-
     }
-
-    /* -----------------------------------------------------
-       BUILD PROMPT
-    ----------------------------------------------------- */
 
     const finalPrompt =
       `${genre}, ${mood}, ${String(prompt).trim()}, ` +
       "professional commercial music production, " +
-      "strong groove, memorable melody, polished mix, " +
-      "clear vocals, balanced mastering";
-
-    /* -----------------------------------------------------
-       BUILD LYRICS
-    ----------------------------------------------------- */
+      "strong groove, memorable melody, polished mix";
 
     const finalLyrics =
       String(lyrics).trim() ||
       makeLyrics(String(prompt).trim());
 
-    console.log("------------------------------------------");
-    console.log("NEW MUSIC GENERATION");
-    console.log("------------------------------------------");
+    console.log("--------------------------------");
+    console.log("4TVIBEZ MUSIC GENERATION");
+    console.log("--------------------------------");
     console.log("Prompt:", finalPrompt);
-    console.log("Lyrics:", finalLyrics.length, "characters");
-
-    /* -----------------------------------------------------
-       CONNECT
-    ----------------------------------------------------- */
+    console.log("Lyrics length:", finalLyrics.length);
 
     const client = await getClient();
 
-    /* =====================================================
-       ACE-STEP GENERATION INPUTS
-
-       These are the inputs used by the current
-       /generation_wrapper endpoint.
-    ===================================================== */
+    /*
+     * IMPORTANT
+     *
+     * ACE-Step currently expects:
+     *
+     * First 4 inputs:
+     * 1 selected_model
+     * 2 generation_mode
+     * 3 simple_query_input
+     * 4 simple_vocal_language
+     *
+     * Then the generation parameters.
+     */
 
     const inputs = [
 
-      // 1. Model
+      /* =====================================================
+         SIMPLE MODE INPUTS
+      ===================================================== */
+
+      // 1 selected model
       "acestep-v15-xl-turbo",
 
-      // 2. Generation mode
-      "custom",
+      // 2 generation mode
+      "Simple",
 
-      // 3. simple_query_input
+      // 3 simple query
       finalPrompt,
 
-      // 4. simple_vocal_language
+      // 4 simple vocal language
       vocalLanguage,
 
-      // 5. prompt
+      /* =====================================================
+         GENERATION PARAMETERS
+      ===================================================== */
+
+      // 5 captions
       finalPrompt,
 
-      // 6. lyrics
+      // 6 lyrics
       finalLyrics,
 
-      // 7. audio duration / related control
-      0,
+      // 7 BPM
+      120,
 
-      // 8. reference audio
-      "",
+      // 8 key scale
+      key || "C",
 
-      // 9. key
-      key || "",
+      // 9 time signature
+      "4/4",
 
-      // 10. vocal language
+      // 10 vocal language
       vocalLanguage,
 
-      // 11. inference steps
+      // 11 inference steps
       8,
 
-      // 12. guidance scale
-      7,
+      // 12 guidance scale
+      7.0,
 
-      // 13. thinking / enhancement
+      // 13 random seed checkbox
       true,
 
-      // 14. seed
-      "-1",
-
-      // 15. audio reference
-      null,
-
-      // 16. seed
+      // 14 seed
       -1,
 
-      // 17. batch size
-      2,
-
-      // 18
+      // 15 reference audio
       null,
 
-      // 19
+      // 16 audio duration
+      60,
+
+      // 17 batch size
+      1,
+
+      // 18 source audio
       null,
 
-      // 20
-      0,
-
-      // 21
-      -1,
-
-      // 22. semantic mask prompt
-      "Fill the audio semantic mask based on the given conditions:",
-
-      // 23. batch
-      1,
-
-      // 24. task type
-      "text2music",
-
-      // 25
-      false,
-
-      // 26
-      0,
-
-      // 27
-      1,
-
-      // 28
-      3,
-
-      // 29
-      "ode",
-
-      // 30
+      // 19 audio code string
       "",
 
-      // 31. format
+      // 20 repainting start
+      0.0,
+
+      // 21 repainting end
+      0.0,
+
+      // 22 instruction
+      "",
+
+      // 23 audio cover strength
+      1.0,
+
+      // 24 task type
+      "text2music",
+
+      // 25 use ADG
+      false,
+
+      // 26 CFG interval start
+      0.0,
+
+      // 27 CFG interval end
+      1.0,
+
+      // 28 shift
+      1.0,
+
+      // 29 inference method
+      "ode",
+
+      // 30 custom timesteps
+      null,
+
+      // 31 audio format
       "mp3",
 
-      // 32
+      // 32 LM temperature
       0.85,
 
-      // 33
+      // 33 thinking
       true,
 
-      // 34
-      2,
+      // 34 LM CFG scale
+      2.0,
 
-      // 35
+      // 35 LM top K
       0,
 
-      // 36
+      // 36 LM top P
       0.9,
 
-      // 37
-      "NO USER INPUT",
+      // 37 LM negative prompt
+      "",
 
-      // 38
+      // 38 use CoT metas
       true,
 
-      // 39
+      // 39 use CoT caption
       true,
 
-      // 40
+      // 40 use CoT language
       true,
 
-      // 41
-      null,
-
-      // 42
+      // 41 format caption state
       false,
 
-      // 43
-      true,
-
-      // 44
+      // 42 constrained decoding debug
       false,
 
-      // 45
+      // 43 allow LM batch
       false,
 
-      // 46
+      // 44 auto score
+      false,
+
+      // 45 auto LRC
+      false,
+
+      // 46 score scale
       0.5,
 
-      // 47
-      "8",
+      // 47 LM batch chunk size
+      8,
 
-      // 48
+      // 48 track name
+      "4TVIBEZ Original",
+
+      // 49 complete track classes
+      "",
+
+      // 50 autogen checkbox
+      false,
+
+      // 51 current batch index
+      0,
+
+      // 52 total batches
+      1,
+
+      // 53 batch queue
       null,
 
-      // 49
-      false
+      // 54 generation params state
+      null
     ];
 
-    console.log("Submitting job to ACE-Step...");
-
-    /* -----------------------------------------------------
-       SUBMIT JOB
-
-       IMPORTANT:
-       The array is passed directly.
-    ----------------------------------------------------- */
+    console.log(
+      "Submitting correctly ordered ACE-Step request..."
+    );
 
     const job = client.submit(
       "/generation_wrapper",
       inputs
     );
 
-    /* -----------------------------------------------------
-       CREATE OUR OWN JOB ID
-    ----------------------------------------------------- */
-
     const id =
       `${Date.now()}-${Math.random()
         .toString(36)
         .slice(2)}`;
 
-    /* -----------------------------------------------------
-       JOB STATE
-    ----------------------------------------------------- */
-
     const state = {
-      status: "starting",
+      status: "queued",
       result: null,
       audioUrl: null,
       error: null,
@@ -442,17 +429,15 @@ app.post("/api/generate", async (req, res) => {
       state
     });
 
-    console.log("Our job ID:", id);
+    console.log("Job ID:", id);
 
     /* =====================================================
-       LISTEN TO ACE-STEP EVENT STREAM
+       READ GRADIO EVENT STREAM
     ===================================================== */
 
     (async () => {
 
       try {
-
-        state.status = "queued";
 
         for await (const message of job) {
 
@@ -463,9 +448,9 @@ app.post("/api/generate", async (req, res) => {
 
           state.lastEvent = message;
 
-          /* ===============================================
-             STATUS EVENT
-          =============================================== */
+          /* -------------------------------------------------
+             STATUS
+          ------------------------------------------------- */
 
           if (message?.type === "status") {
 
@@ -475,38 +460,26 @@ app.post("/api/generate", async (req, res) => {
               "";
 
             console.log(
-              `ACE-Step status [${id}]:`,
+              "ACE-Step status:",
               status
             );
 
-            // Queueing
             if (
               status === "pending" ||
               status === "queued"
             ) {
+
               state.status = "queued";
             }
 
-            // Generation
             else if (
               status === "generating" ||
               status === "processing"
             ) {
+
               state.status = "generating";
             }
 
-            // Complete
-            else if (
-              status === "complete" ||
-              status === "completed"
-            ) {
-
-              if (!state.audioUrl) {
-                state.status = "processing";
-              }
-            }
-
-            // Error
             else if (
               status === "error" ||
               message?.success === false
@@ -517,105 +490,76 @@ app.post("/api/generate", async (req, res) => {
               state.error =
                 message?.message ||
                 message?.error ||
-                message?.code ||
-                "ACE-Step reported a generation error.";
-
-              console.error(
-                `ACE-Step generation error [${id}]:`,
-                state.error
-              );
+                "ACE-Step reported an error.";
 
               break;
             }
           }
 
-          /* ===============================================
-             DATA EVENT
-          =============================================== */
+          /* -------------------------------------------------
+             DATA
+          ------------------------------------------------- */
 
           if (message?.type === "data") {
 
-            console.log(
-              `ACE-Step DATA received [${id}]`
-            );
-
-            const data = message?.data;
-
-            state.result = data;
-
-            /* ---------------------------------------------
-               Try to find actual audio URL
-            --------------------------------------------- */
+            state.result =
+              message.data;
 
             const audioUrl =
-              findAudioUrl(data);
+              findAudioUrl(message.data);
 
             if (audioUrl) {
 
-              state.audioUrl = audioUrl;
+              state.audioUrl =
+                audioUrl;
 
-              state.status = "succeeded";
+              state.status =
+                "succeeded";
 
               console.log(
-                `AUDIO FOUND [${id}]:`,
+                "AUDIO URL FOUND:",
                 audioUrl
-              );
-
-            } else {
-
-              console.log(
-                `Data received but audio URL was not found [${id}]`
               );
             }
           }
         }
 
-        /* =================================================
+        /* -------------------------------------------------
            STREAM FINISHED
-        ================================================= */
+        ------------------------------------------------- */
 
         if (state.audioUrl) {
 
-          state.status = "succeeded";
-
-          console.log(
-            `Generation SUCCESS [${id}]`
-          );
+          state.status =
+            "succeeded";
 
         } else if (
           state.status !== "failed"
         ) {
 
-          state.status = "failed";
+          state.status =
+            "failed";
 
           state.error =
-            "ACE-Step completed the request but did not return an audio file. The free Hugging Face GPU may also have stopped or rejected the task.";
-
-          console.error(
-            `Generation ended without audio [${id}]`
-          );
+            "ACE-Step finished but did not return an audio URL.";
         }
 
       } catch (error) {
 
         console.error(
-          `ACE-Step job error [${id}]:`,
+          "ACE-Step stream error:",
           error
         );
 
-        state.status = "failed";
+        state.status =
+          "failed";
 
         state.error =
           error?.message ||
           "ACE-Step generation failed.";
-
       }
 
     })();
-
-    /* -----------------------------------------------------
-       SEND JOB ID TO FRONTEND
-    ----------------------------------------------------- */
 
     return res.json({
       ok: true,
@@ -627,57 +571,51 @@ app.post("/api/generate", async (req, res) => {
   } catch (error) {
 
     console.error(
-      "Could not start generation:",
+      "Generation start error:",
       error
     );
 
-    // Reset connection if necessary
     aceClient = null;
 
     return res.status(503).json({
       ok: false,
       error:
         error?.message ||
-        "ACE-Step could not start the generation."
+        "Could not start ACE-Step generation."
     });
   }
 });
 
 /* =========================================================
-   CHECK GENERATION STATUS
+   CHECK GENERATION
 ========================================================= */
 
 app.get("/api/generate/:id", async (req, res) => {
 
   try {
 
-    const id = req.params.id;
-
     const stored =
-      global.musicJobs.get(id);
-
-    /* -----------------------------------------------------
-       JOB NOT FOUND
-    ----------------------------------------------------- */
+      global.musicJobs.get(
+        req.params.id
+      );
 
     if (!stored) {
 
       return res.status(404).json({
         ok: false,
         status: "not_found",
-        error:
-          "Generation job not found. It may have expired."
+        error: "Generation job not found."
       });
-
     }
 
-    const { state } = stored;
+    const { state } =
+      stored;
 
-    /* -----------------------------------------------------
-       SUCCESS
-    ----------------------------------------------------- */
+    /* SUCCESS */
 
-    if (state.status === "succeeded") {
+    if (
+      state.status === "succeeded"
+    ) {
 
       const response = {
         ok: true,
@@ -686,39 +624,41 @@ app.get("/api/generate/:id", async (req, res) => {
         result: state.result
       };
 
-      // Remove completed job after returning it
-      global.musicJobs.delete(id);
+      global.musicJobs.delete(
+        req.params.id
+      );
 
       return res.json(response);
     }
 
-    /* -----------------------------------------------------
-       FAILED
-    ----------------------------------------------------- */
+    /* FAILURE */
 
-    if (state.status === "failed") {
+    if (
+      state.status === "failed"
+    ) {
 
-      const errorMessage =
+      const error =
         state.error ||
         "ACE-Step generation failed.";
 
-      // Keep failure briefly available
-      global.musicJobs.delete(id);
+      global.musicJobs.delete(
+        req.params.id
+      );
 
       return res.status(500).json({
         ok: false,
         status: "failed",
-        error: errorMessage
+        error
       });
     }
 
-    /* -----------------------------------------------------
-       PROCESSING
-    ----------------------------------------------------- */
+    /* PROCESSING */
 
     return res.json({
       ok: false,
-      status: state.status || "processing",
+      status:
+        state.status ||
+        "processing",
       message:
         state.status === "queued"
           ? "Your song is waiting for the AI GPU..."
@@ -728,7 +668,7 @@ app.get("/api/generate/:id", async (req, res) => {
   } catch (error) {
 
     console.error(
-      "Status check error:",
+      "Generation status error:",
       error
     );
 
@@ -742,17 +682,17 @@ app.get("/api/generate/:id", async (req, res) => {
 });
 
 /* =========================================================
-   CANCEL GENERATION
+   CANCEL JOB
 ========================================================= */
 
 app.delete("/api/generate/:id", async (req, res) => {
 
   try {
 
-    const id = req.params.id;
-
     const stored =
-      global.musicJobs.get(id);
+      global.musicJobs.get(
+        req.params.id
+      );
 
     if (!stored) {
 
@@ -760,7 +700,6 @@ app.delete("/api/generate/:id", async (req, res) => {
         ok: false,
         error: "Generation job not found."
       });
-
     }
 
     try {
@@ -769,18 +708,21 @@ app.delete("/api/generate/:id", async (req, res) => {
         stored.job &&
         typeof stored.job.cancel === "function"
       ) {
+
         stored.job.cancel();
       }
 
-    } catch (cancelError) {
+    } catch (error) {
 
       console.warn(
-        "Could not cancel ACE-Step job:",
-        cancelError
+        "Cancel warning:",
+        error
       );
     }
 
-    global.musicJobs.delete(id);
+    global.musicJobs.delete(
+      req.params.id
+    );
 
     return res.json({
       ok: true,
@@ -793,29 +735,37 @@ app.delete("/api/generate/:id", async (req, res) => {
       ok: false,
       error:
         error?.message ||
-        "Could not cancel generation."
+        "Could not cancel job."
     });
   }
 });
 
 /* =========================================================
-   CLEAN OLD JOBS
+   REMOVE OLD JOBS
 ========================================================= */
 
 setInterval(() => {
 
-  const now = Date.now();
+  const now =
+    Date.now();
 
-  for (const [id, stored] of global.musicJobs.entries()) {
+  for (
+    const [id, stored]
+    of global.musicJobs.entries()
+  ) {
 
     const age =
-      now - (stored.state?.startedAt || now);
+      now -
+      (stored.state?.startedAt || now);
 
-    // Remove jobs older than 20 minutes
-    if (age > 20 * 60 * 1000) {
+    if (
+      age >
+      20 * 60 * 1000
+    ) {
 
       console.log(
-        `Removing expired job: ${id}`
+        "Removing expired job:",
+        id
       );
 
       try {
@@ -824,6 +774,7 @@ setInterval(() => {
           stored.job &&
           typeof stored.job.cancel === "function"
         ) {
+
           stored.job.cancel();
         }
 
@@ -841,11 +792,15 @@ setInterval(() => {
 
 app.listen(PORT, () => {
 
-  console.log("------------------------------------------");
+  console.log("--------------------------------");
   console.log("4TVIBEZ AI MUSIC STUDIO");
-  console.log("------------------------------------------");
-  console.log(`Server running on port ${PORT}`);
-  console.log(`ACE-Step Space: ${HF_SPACE}`);
-  console.log("------------------------------------------");
+  console.log("--------------------------------");
+  console.log(
+    `Server running on port ${PORT}`
+  );
+  console.log(
+    `ACE-Step: ${HF_SPACE}`
+  );
+  console.log("--------------------------------");
 
 });
