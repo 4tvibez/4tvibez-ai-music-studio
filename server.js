@@ -1,45 +1,91 @@
-const express = require("express");
-const path = require("path");
-const { Client } = require("@gradio/client");
+import express from "express";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Official ACE-Step Hugging Face Space
-const HF_SPACE = "ACE-Step/Ace-Step-v1.5";
+// ACE-Step API server.
+// Set this in Railway if your ACE-Step server is hosted somewhere else.
+const ACE_STEP_URL =
+  process.env.ACE_STEP_URL || "http://127.0.0.1:8001";
+
+const ACE_STEP_API_KEY =
+  process.env.ACE_STEP_API_KEY || "";
 
 app.use(express.json({ limit: "2mb" }));
-app.use(express.static(path.join(__dirname, "public")));
 
-const jobs = new Map();
+// Your index.html is in the ROOT of the GitHub repository.
+app.use(express.static(process.cwd()));
 
-let clientPromise = null;
+// -----------------------------
+// Helpers
+// -----------------------------
 
-async function getClient() {
-  if (!clientPromise) {
-    clientPromise = Client.connect(HF_SPACE, {
-      events: ["status", "data"]
-    });
+async function aceFetch(endpoint, options = {}) {
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {})
+  };
+
+  if (ACE_STEP_API_KEY) {
+    headers.Authorization = `Bearer ${ACE_STEP_API_KEY}`;
+    headers["X-API-Key"] = ACE_STEP_API_KEY;
   }
 
-  return clientPromise;
+  const response = await fetch(
+    `${ACE_STEP_URL}${endpoint}`,
+    {
+      ...options,
+      headers
+    }
+  );
+
+  const text = await response.text();
+
+  let data;
+
+  try {
+    data = JSON.parse(text);
+  } catch {
+    data = {
+      raw: text
+    };
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      data?.message ||
+      data?.error ||
+      data?.detail ||
+      `ACE-Step HTTP ${response.status}`
+    );
+  }
+
+  return data;
 }
 
-// Find an audio URL anywhere inside an ACE-Step response.
-function findAudioUrl(value) {
+function unwrap(data) {
+  if (
+    data &&
+    typeof data === "object" &&
+    "data" in data
+  ) {
+    return data.data;
+  }
+
+  return data;
+}
+
+function findAudioPath(value) {
   if (!value) return null;
 
   if (typeof value === "string") {
     if (
-      value.startsWith("http://") ||
-      value.startsWith("https://")
-    ) {
-      return value;
-    }
-
-    if (
-      value.startsWith("/file=") ||
-      value.startsWith("/gradio_api/file=")
+      value.includes("/v1/audio") ||
+      value.endsWith(".mp3") ||
+      value.endsWith(".wav") ||
+      value.endsWith(".flac") ||
+      value.endsWith(".opus") ||
+      value.endsWith(".aac")
     ) {
       return value;
     }
@@ -49,76 +95,91 @@ function findAudioUrl(value) {
 
   if (Array.isArray(value)) {
     for (const item of value) {
-      const found = findAudioUrl(item);
-      if (found) return found;
+      const result = findAudioPath(item);
+
+      if (result) return result;
     }
+
     return null;
   }
 
   if (typeof value === "object") {
-    const preferredKeys = [
-      "url",
-      "audio",
+    const keys = [
       "file",
+      "audio",
+      "audio_path",
       "path",
-      "value",
-      "data"
+      "url",
+      "result"
     ];
 
-    for (const key of preferredKeys) {
+    for (const key of keys) {
       if (key in value) {
-        const found = findAudioUrl(value[key]);
-        if (found) return found;
+        const result = findAudioPath(value[key]);
+
+        if (result) return result;
       }
     }
 
     for (const key of Object.keys(value)) {
-      const found = findAudioUrl(value[key]);
-      if (found) return found;
+      const result = findAudioPath(value[key]);
+
+      if (result) return result;
     }
   }
 
   return null;
 }
 
-function normaliseAudioUrl(url) {
-  if (!url) return null;
+function makeAudioUrl(pathOrUrl) {
+  if (!pathOrUrl) return null;
 
-  if (url.startsWith("http://") || url.startsWith("https://")) {
-    return url;
+  if (
+    pathOrUrl.startsWith("http://") ||
+    pathOrUrl.startsWith("https://")
+  ) {
+    return pathOrUrl;
   }
 
-  if (url.startsWith("/")) {
-    return `https://ace-step-ace-step-v1-5.hf.space${url}`;
+  if (pathOrUrl.startsWith("/")) {
+    return `${ACE_STEP_URL}${pathOrUrl}`;
   }
 
-  return url;
+  return `${ACE_STEP_URL}/${pathOrUrl}`;
 }
 
-// Health check
+// -----------------------------
+// Health
+// -----------------------------
+
 app.get("/api/health", async (req, res) => {
   try {
-    const client = await getClient();
-
-    await client.view_api();
+    const result = await aceFetch("/health", {
+      method: "GET"
+    });
 
     res.json({
       ok: true,
       provider: "ACE-Step 1.5",
-      space: HF_SPACE
+      aceStep: result
     });
+
   } catch (error) {
-    console.error("Health error:", error);
+    console.error("ACE-Step health error:", error);
 
     res.status(503).json({
       ok: false,
       provider: "ACE-Step 1.5",
-      error: error.message
+      error: error.message,
+      aceStepUrl: ACE_STEP_URL
     });
   }
 });
 
-// Start generation
+// -----------------------------
+// Generate
+// -----------------------------
+
 app.post("/api/generate", async (req, res) => {
   try {
     const {
@@ -126,13 +187,17 @@ app.post("/api/generate", async (req, res) => {
       lyrics,
       bpm,
       key,
+      key_scale,
       vocalLanguage,
-      duration
+      vocal_language,
+      duration,
+      audio_duration,
+      instrumental
     } = req.body || {};
 
     const finalPrompt =
       String(prompt || "").trim() ||
-      "An uplifting Afrobeats song with warm guitars, deep bass, rhythmic drums and beautiful melodic vocals.";
+      "A beautiful modern Afrobeats song with warm guitar, deep bass, rhythmic drums, catchy melody and emotional vocals.";
 
     const finalLyrics =
       String(lyrics || "").trim() ||
@@ -160,7 +225,12 @@ No matter where you go,
 You are the rhythm in my heart,
 You are the only one I know.`;
 
-    const finalDuration = Number(duration) || 30;
+    const finalDuration =
+      Number(
+        audio_duration ??
+        duration ??
+        30
+      ) || 30;
 
     const finalBpm =
       bpm === undefined ||
@@ -170,382 +240,264 @@ You are the only one I know.`;
         : Number(bpm);
 
     const finalKey =
-      key && String(key).trim()
-        ? String(key).trim()
-        : null;
+      String(
+        key_scale ??
+        key ??
+        ""
+      ).trim();
 
-    const finalVocalLanguage =
-      vocalLanguage && String(vocalLanguage).trim()
-        ? String(vocalLanguage).trim()
-        : "unknown";
+    const finalLanguage =
+      String(
+        vocal_language ??
+        vocalLanguage ??
+        "unknown"
+      ).trim() || "unknown";
 
-    const client = await getClient();
+    const isInstrumental =
+      Boolean(instrumental);
 
-    /*
-     * ACE-Step generation_wrapper positional order.
-     *
-     * IMPORTANT:
-     * - generation mode must be "simple" for this Space API
-     * - track_name must be null in Simple mode
-     * - do NOT put "4TVIBEZ Original" into track_name
-     */
+    const payload = {
+      prompt: finalPrompt,
 
-    const inputs = [
+      lyrics:
+        isInstrumental
+          ? ""
+          : finalLyrics,
 
-      // 1 selected model
-      "acestep-v15-xl-turbo",
+      thinking: false,
 
-      // 2 generation mode
-      "simple",
+      audio_duration:
+        Math.min(
+          Math.max(finalDuration, 10),
+          600
+        ),
 
-      // 3 simple query
-      finalPrompt,
+      bpm: finalBpm,
 
-      // 4 simple vocal language
-      finalVocalLanguage,
+      key_scale:
+        finalKey || null,
 
-      // 5 captions
-      finalPrompt,
+      vocal_language:
+        finalLanguage,
 
-      // 6 lyrics
-      finalLyrics,
+      audio_format: "mp3",
 
-      // 7 BPM
-      finalBpm,
+      task_type: "text2music",
 
-      // 8 key / scale
-      finalKey,
+      inference_steps: 8,
 
-      // 9 time signature
-      "4/4",
+      guidance_scale: 7,
 
-      // 10 vocal language
-      finalVocalLanguage,
+      use_adg: false,
 
-      // 11 inference steps
-      8,
+      cfg_interval_start: 0,
 
-      // 12 guidance scale
-      7,
+      cfg_interval_end: 1,
 
-      // 13 random seed checkbox
-      false,
+      infer_method: "ode",
 
-      // 14 seed
-      -1,
+      shift: 3,
 
-      // 15 reference audio
-      null,
+      lm_temperature: 0.85,
 
-      // 16 audio duration
-      finalDuration,
+      lm_cfg_scale: 2.5,
 
-      // 17 batch size
-      1,
+      lm_top_k: 50,
 
-      // 18 source audio
-      null,
+      lm_top_p: 0.9,
 
-      // 19 text2music audio code string
-      "",
+      lm_negative_prompt:
+        "NO USER INPUT",
 
-      // 20 repainting start
-      0,
+      use_cot_caption: true,
 
-      // 21 repainting end
-      -1,
+      use_cot_language: true,
 
-      // 22 instruction
-      "Fill the audio semantic mask based on the given conditions:",
+      is_format_caption: false,
 
-      // 23 audio cover strength
-      1,
+      allow_lm_batch: true
+    };
 
-      // 24 task type
-      "text2music",
-
-      // 25 use ADG
-      false,
-
-      // 26 CFG interval start
-      0,
-
-      // 27 CFG interval end
-      1,
-
-      // 28 shift
-      3,
-
-      // 29 inference method
-      "ode",
-
-      // 30 custom timesteps
-      null,
-
-      // 31 audio format
-      "mp3",
-
-      // 32 LM temperature
-      0.85,
-
-      // 33 thinking
-      false,
-
-      // 34 LM CFG scale
-      2.5,
-
-      // 35 LM top K
-      50,
-
-      // 36 LM top P
-      0.9,
-
-      // 37 LM negative prompt
-      "NO USER INPUT",
-
-      // 38 use COT metas
-      true,
-
-      // 39 use COT caption
-      true,
-
-      // 40 use COT language
-      true,
-
-      // 41 format caption state
-      false,
-
-      // 42 constrained decoding debug
-      false,
-
-      // 43 allow LM batch
-      true,
-
-      // 44 auto score
-      false,
-
-      // 45 auto LRC
-      true,
-
-      // 46 score scale
-      1,
-
-      // 47 LM batch chunk size
-      1,
-
-      // 48 TRACK NAME
-      // MUST be null for Simple mode.
-      null,
-
-      // 49 complete track classes
-      [],
-
-      // 50 autogen checkbox
-      false,
-
-      // 51 current batch index
-      0,
-
-      // 52 total batches
-      1,
-
-      // 53 batch queue
-      [],
-
-      // 54 generation params state
-      {}
-    ];
-
-    console.log("Submitting ACE-Step generation...");
-
-    const job = client.submit(
-      "/generation_wrapper",
-      inputs
+    console.log(
+      "Sending generation request to ACE-Step..."
     );
 
-    const jobId =
-      Date.now().toString(36) +
-      Math.random().toString(36).slice(2);
-
-    jobs.set(jobId, {
-      status: "generating",
-      audioUrl: null,
-      error: null,
-      createdAt: Date.now()
-    });
-
-    // Process ACE-Step events in background.
-    (async () => {
-      try {
-        for await (const message of job) {
-
-          console.log(
-            "ACE-Step message:",
-            JSON.stringify(message).slice(0, 2000)
-          );
-
-          const stored = jobs.get(jobId);
-
-          if (!stored) continue;
-
-          // Error message
-          if (message && message.type === "error") {
-            stored.status = "error";
-            stored.error =
-              message.message ||
-              message.error ||
-              "ACE-Step generation failed.";
-
-            jobs.set(jobId, stored);
-            continue;
-          }
-
-          // Status update
-          if (message && message.type === "status") {
-
-            const status =
-              message.status ||
-              message.stage ||
-              "";
-
-            if (
-              status === "complete" ||
-              status === "completed"
-            ) {
-              stored.status = "complete";
-            } else if (status === "error") {
-              stored.status = "error";
-              stored.error =
-                message.message ||
-                "ACE-Step generation failed.";
-            } else {
-              stored.status = "generating";
-            }
-
-            jobs.set(jobId, stored);
-          }
-
-          // Data result
-          if (message && message.type === "data") {
-
-            const possibleAudio =
-              findAudioUrl(message.data);
-
-            if (possibleAudio) {
-              stored.audioUrl =
-                normaliseAudioUrl(possibleAudio);
-
-              stored.status = "complete";
-
-              jobs.set(jobId, stored);
-
-              console.log(
-                "Audio found:",
-                stored.audioUrl
-              );
-            }
-          }
-        }
-
-        const stored = jobs.get(jobId);
-
-        if (stored && !stored.audioUrl && stored.status !== "error") {
-          stored.status = "complete";
-          jobs.set(jobId, stored);
-        }
-
-      } catch (error) {
-
-        console.error(
-          "ACE-Step generation error:",
-          error
-        );
-
-        const stored = jobs.get(jobId);
-
-        if (stored) {
-          stored.status = "error";
-          stored.error =
-            error.message ||
-            "Generation failed.";
-
-          jobs.set(jobId, stored);
-        }
+    const result = await aceFetch(
+      "/release_task",
+      {
+        method: "POST",
+        body: JSON.stringify(payload)
       }
-    })();
+    );
+
+    const data = unwrap(result);
+
+    const taskId =
+      data?.task_id ||
+      data?.id ||
+      data?.taskId;
+
+    if (!taskId) {
+      console.error(
+        "ACE-Step returned:",
+        JSON.stringify(result)
+      );
+
+      return res.status(502).json({
+        ok: false,
+        error:
+          "ACE-Step did not return a task ID.",
+        response: result
+      });
+    }
 
     res.json({
       ok: true,
-      id: jobId,
+      id: taskId,
       status: "generating"
     });
 
   } catch (error) {
-
     console.error(
-      "Generate request error:",
+      "Generation start error:",
       error
     );
 
     res.status(500).json({
       ok: false,
-      error:
-        error.message ||
-        "Unable to start generation."
+      error: error.message
     });
   }
 });
 
+// -----------------------------
 // Poll generation
-app.get("/api/generate/:id", (req, res) => {
+// -----------------------------
 
-  const job = jobs.get(req.params.id);
+app.get(
+  "/api/generate/:id",
+  async (req, res) => {
+    try {
+      const taskId =
+        req.params.id;
 
-  if (!job) {
-    return res.status(404).json({
-      ok: false,
-      error: "Generation job not found."
-    });
-  }
+      const result =
+        await aceFetch(
+          "/query_result",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              task_id: taskId
+            })
+          }
+        );
 
-  res.json({
-    ok: true,
-    status: job.status,
-    audioUrl: job.audioUrl,
-    error: job.error
-  });
-});
+      const data = unwrap(result);
 
-// Cancel / remove job
-app.delete("/api/generate/:id", (req, res) => {
+      let parsed = data;
 
-  jobs.delete(req.params.id);
+      // Some ACE-Step versions return
+      // the result as a JSON string.
+      if (typeof data === "string") {
+        try {
+          parsed = JSON.parse(data);
+        } catch {
+          parsed = {
+            raw: data
+          };
+        }
+      }
 
-  res.json({
-    ok: true
-  });
-});
+      const status =
+        parsed?.status ??
+        data?.status ??
+        "generating";
 
-// Clean old jobs every 30 minutes
-setInterval(() => {
+      if (
+        status === 2 ||
+        status === "failed" ||
+        status === "error"
+      ) {
+        return res.json({
+          ok: false,
+          status: "error",
+          error:
+            parsed?.message ||
+            parsed?.error ||
+            "ACE-Step generation failed."
+        });
+      }
 
-  const cutoff =
-    Date.now() - 60 * 60 * 1000;
+      const audioPath =
+        findAudioPath(parsed);
 
-  for (const [id, job] of jobs.entries()) {
+      if (audioPath) {
+        return res.json({
+          ok: true,
+          status: "complete",
+          audioUrl:
+            makeAudioUrl(audioPath)
+        });
+      }
 
-    if (job.createdAt < cutoff) {
-      jobs.delete(id);
+      if (
+        status === 1 ||
+        status === "success" ||
+        status === "complete" ||
+        status === "completed"
+      ) {
+        return res.json({
+          ok: true,
+          status: "complete",
+          audioUrl: null,
+          result: parsed
+        });
+      }
+
+      res.json({
+        ok: true,
+        status: "generating"
+      });
+
+    } catch (error) {
+      console.error(
+        "Generation polling error:",
+        error
+      );
+
+      res.status(500).json({
+        ok: false,
+        status: "error",
+        error: error.message
+      });
     }
   }
+);
 
-}, 30 * 60 * 1000);
+// -----------------------------
+// Root fallback
+// -----------------------------
 
-// Start server
-app.listen(PORT, "0.0.0.0", () => {
-
-  console.log(
-    `4TVIBEZ AI Music Studio running on port ${PORT}`
+app.get("*", (req, res) => {
+  res.sendFile(
+    `${process.cwd()}/index.html`
   );
-
 });
+
+// -----------------------------
+// Start
+// -----------------------------
+
+app.listen(
+  PORT,
+  "0.0.0.0",
+  () => {
+    console.log(
+      `4TVIBEZ AI Music Studio running on port ${PORT}`
+    );
+
+    console.log(
+      `ACE-Step API: ${ACE_STEP_URL}`
+    );
+  }
+);
