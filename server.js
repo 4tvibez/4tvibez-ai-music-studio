@@ -178,7 +178,11 @@ app.post("/api/generate", async (req, res) => {
     console.log("Connecting to ACE-Step:", ACE_STEP_SPACE);
     const client = await getAceClient();
 
-    const result = await client.predict(ACE_STEP_API, payload);
+    console.log("Sending generation request to ACE-Step...");
+    const result = await Promise.race([
+      client.predict(ACE_STEP_API, payload),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("ACE-Step generation timed out after 8 minutes.")), 480000))
+    ]);
     const data = result?.data ?? result;
 
     const audio = findAudio(data);
