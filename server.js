@@ -117,66 +117,59 @@ app.post("/api/generate", async (req, res) => {
 
     const payload = [
       "acestep-v15-xl-turbo", // selected_model
-      "Custom", // generation_mode
-      "", // simple_query_input
-      "en", // simple_vocal_language
-      caption, // captions
-      lyrics: Boolean(instrumental)
-        ? "[Instrumental]"
-        : songLyrics,
-      bpm: bpm === undefined || bpm === null || bpm === ""
-        ? 0
-        : Number(bpm),
-      key_scale: String(key_scale ?? key ?? "").trim(),
-      time_signature: "",
-      vocal_language: String(
-        vocal_language ?? vocalLanguage ?? "unknown"
-      ).trim() || "unknown",
-      inference_steps: 8,
-      guidance_scale: 7,
-      random_seed_checkbox: true,
-      seed: "-1",
-      reference_audio: null,
-      audio_duration: seconds,
-      batch_size_input: 1,
-      src_audio: null,
-      text2music_audio_code_string: "",
-      repainting_start: 0,
-      repainting_end: -1,
-      instruction_display_gen: "",
-      audio_cover_strength: 1,
-      task_type: "text2music",
-      use_adg: false,
-      cfg_interval_start: 0,
-      cfg_interval_end: 1,
-      shift: 3,
-      infer_method: "ode",
-      custom_timesteps: "",
-      audio_format: "mp3",
-      lm_temperature: 0.85,
-      think_checkbox: true,
-      lm_cfg_scale: 2,
-      lm_top_k: 0,
-      lm_top_p: 0.9,
-      lm_negative_prompt: "NO USER INPUT",
-      use_cot_metas: true,
-      use_cot_caption: true,
-      use_cot_language: true,
-      is_format_caption: false,
-      constrained_decoding_debug: false,
-      allow_lm_batch: true,
-      lm_batch_chunk_size: 8,
-      auto_score: false,
-      auto_lrc: false,
-      score_scale: 0.5,
-      8, // lm_batch_chunk_size
-      "", // track_name
-      "", // complete_track_classes
-      false, // autogen_checkbox
-      0, // current_batch_index
-      1, // total_batches
-      {}, // batch_queue
-      {} // generation_params_state
+      "Custom",                // generation_mode
+      "",                      // simple_query_input
+      "en",                    // simple_vocal_language
+      caption,                 // captions
+      Boolean(instrumental) ? "[Instrumental]" : songLyrics,
+      bpm === undefined || bpm === null || bpm === "" ? 0 : Number(bpm),
+      String(key_scale ?? key ?? "").trim(),
+      "",
+      String(vocal_language ?? vocalLanguage ?? "unknown").trim() || "unknown",
+      8,
+      7,
+      true,
+      "-1",
+      null,
+      seconds,
+      1,
+      null,
+      "",
+      0,
+      -1,
+      "",
+      1,
+      "text2music",
+      false,
+      0,
+      1,
+      3,
+      "ode",
+      "",
+      "mp3",
+      0.85,
+      true,
+      2,
+      0,
+      0.9,
+      "NO USER INPUT",
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      0.5,
+      8,
+      "",
+      "",
+      false,
+      0,
+      1,
+      {},
+      {}
     ];
 
     console.log("Connecting to ACE-Step:", ACE_STEP_SPACE);
