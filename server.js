@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3000;
 const ACE_STEP_SPACE =
   process.env.ACE_STEP_SPACE || "ACE-Step/Ace-Step-v1.5";
 const ACE_STEP_API =
-  process.env.ACE_STEP_API || "/generate_with_progress";
+  process.env.ACE_STEP_API || "/generation_wrapper";
 const ACE_STEP_TOKEN =
   process.env.ACE_STEP_TOKEN || "";
 
@@ -115,8 +115,12 @@ app.post("/api/generate", async (req, res) => {
       600
     );
 
-    const payload = {
-      captions: caption,
+    const payload = [
+      "acestep-v15-xl-turbo", // selected_model
+      "Custom", // generation_mode
+      "", // simple_query_input
+      "en", // simple_vocal_language
+      caption, // captions
       lyrics: Boolean(instrumental)
         ? "[Instrumental]"
         : songLyrics,
@@ -164,8 +168,16 @@ app.post("/api/generate", async (req, res) => {
       lm_batch_chunk_size: 8,
       auto_score: false,
       auto_lrc: false,
-      score_scale: 0.5
-    };
+      score_scale: 0.5,
+      8, // lm_batch_chunk_size
+      "", // track_name
+      "", // complete_track_classes
+      false, // autogen_checkbox
+      0, // current_batch_index
+      1, // total_batches
+      {}, // batch_queue
+      {} // generation_params_state
+    ];
 
     console.log("Connecting to ACE-Step:", ACE_STEP_SPACE);
     const client = await getAceClient();
