@@ -126,7 +126,7 @@ app.post("/api/generate", async (req, res) => {
       String(key_scale ?? key ?? "").trim(), // key_scale
       "",                      // time_signature
       String(vocal_language ?? vocalLanguage ?? "unknown").trim() || "unknown", // vocal_language
-      0.9,                     // lm_top_p
+      1,                       // lm_top_p (ACE-Step minimum is 1)
       "NO USER INPUT",        // lm_negative_prompt
       true,                    // use_cot_metas
       true,                    // use_cot_caption
