@@ -478,7 +478,7 @@ app.get(
 // Root fallback
 // -----------------------------
 
-app.get("*", (req, res) => {
+app.get("/{*splat}", (req, res) => {
   res.sendFile(
     `${process.cwd()}/index.html`
   );
