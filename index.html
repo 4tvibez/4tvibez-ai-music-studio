@@ -414,7 +414,7 @@ async function generate(){
   const mood=q('#mood')?.value || 'Romantic';
   const duration=q('.createPanel select:nth-of-type(3)')?.value || '2-3 minutes';
   let pct=5;
-  const timer=setInterval(()=>{pct=Math.min(pct+2,90);fill.style.width=pct+'%';status.textContent=pct<25?'Connecting to the AI music engine...':pct<50?'Composing melody and rhythm...':pct<72?'Building vocals and arrangement...':'Finishing your master...'},900);
+  const timer=setInterval(()=>{pct=Math.min(pct+2,90);fill.style.width=pct+'%';status.textContent=pct<25?'Connecting to the AI music engine...':pct<50?'Composing melody and rhythm...':pct<72?'Building vocals and arrangement...':'Rendering your song...'},900);
   try{
     const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,genre,mood,duration})});
     const text=await r.text(); let data={}; try{data=JSON.parse(text)}catch(_){}
