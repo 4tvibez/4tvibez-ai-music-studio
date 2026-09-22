@@ -1,184 +1,90 @@
 import express from "express";
+import { Client } from "@gradio/client";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ACE-Step API server.
-// Set this in Railway if your ACE-Step server is hosted somewhere else.
-const ACE_STEP_URL =
-  process.env.ACE_STEP_URL || "http://127.0.0.1:8001";
+const ACE_STEP_SPACE =
+  process.env.ACE_STEP_SPACE || "ACE-Step/Ace-Step-v1.5";
+const ACE_STEP_API =
+  process.env.ACE_STEP_API || "/generate_with_progress";
+const ACE_STEP_TOKEN =
+  process.env.ACE_STEP_TOKEN || "";
 
-const ACE_STEP_API_KEY =
-  process.env.ACE_STEP_API_KEY || "";
+let aceClientPromise = null;
 
 app.use(express.json({ limit: "2mb" }));
-
-// Your index.html is in the ROOT of the GitHub repository.
 app.use(express.static(process.cwd()));
 
-// -----------------------------
-// Helpers
-// -----------------------------
-
-async function aceFetch(endpoint, options = {}) {
-  const headers = {
-    "Content-Type": "application/json",
-    ...(options.headers || {})
-  };
-
-  if (ACE_STEP_API_KEY) {
-    headers.Authorization = `Bearer ${ACE_STEP_API_KEY}`;
-    headers["X-API-Key"] = ACE_STEP_API_KEY;
+async function getAceClient() {
+  if (!aceClientPromise) {
+    aceClientPromise = Client.connect(
+      ACE_STEP_SPACE,
+      ACE_STEP_TOKEN ? { token: ACE_STEP_TOKEN } : undefined
+    ).catch((error) => {
+      aceClientPromise = null;
+      throw error;
+    });
   }
-
-  const response = await fetch(
-    `${ACE_STEP_URL}${endpoint}`,
-    {
-      ...options,
-      headers
-    }
-  );
-
-  const text = await response.text();
-
-  let data;
-
-  try {
-    data = JSON.parse(text);
-  } catch {
-    data = {
-      raw: text
-    };
-  }
-
-  if (!response.ok) {
-    throw new Error(
-      data?.message ||
-      data?.error ||
-      data?.detail ||
-      `ACE-Step HTTP ${response.status}`
-    );
-  }
-
-  return data;
+  return aceClientPromise;
 }
 
-function unwrap(data) {
-  if (
-    data &&
-    typeof data === "object" &&
-    "data" in data
-  ) {
-    return data.data;
-  }
-
-  return data;
-}
-
-function findAudioPath(value) {
+function findAudio(value) {
   if (!value) return null;
-
   if (typeof value === "string") {
     if (
-      value.includes("/v1/audio") ||
+      value.startsWith("http://") ||
+      value.startsWith("https://") ||
       value.endsWith(".mp3") ||
       value.endsWith(".wav") ||
-      value.endsWith(".flac") ||
-      value.endsWith(".opus") ||
-      value.endsWith(".aac")
-    ) {
-      return value;
-    }
-
+      value.endsWith(".flac")
+    ) return value;
     return null;
   }
-
   if (Array.isArray(value)) {
     for (const item of value) {
-      const result = findAudioPath(item);
-
-      if (result) return result;
+      const found = findAudio(item);
+      if (found) return found;
     }
-
     return null;
   }
-
   if (typeof value === "object") {
-    const keys = [
-      "file",
-      "audio",
-      "audio_path",
-      "path",
-      "url",
-      "result"
-    ];
-
-    for (const key of keys) {
+    for (const key of ["url", "path", "file", "audio", "name"]) {
       if (key in value) {
-        const result = findAudioPath(value[key]);
-
-        if (result) return result;
+        const found = findAudio(value[key]);
+        if (found) return found;
       }
     }
-
-    for (const key of Object.keys(value)) {
-      const result = findAudioPath(value[key]);
-
-      if (result) return result;
+    for (const valueItem of Object.values(value)) {
+      const found = findAudio(valueItem);
+      if (found) return found;
     }
   }
-
   return null;
 }
 
-function makeAudioUrl(pathOrUrl) {
-  if (!pathOrUrl) return null;
-
-  if (
-    pathOrUrl.startsWith("http://") ||
-    pathOrUrl.startsWith("https://")
-  ) {
-    return pathOrUrl;
-  }
-
-  if (pathOrUrl.startsWith("/")) {
-    return `${ACE_STEP_URL}${pathOrUrl}`;
-  }
-
-  return `${ACE_STEP_URL}/${pathOrUrl}`;
-}
-
-// -----------------------------
-// Health
-// -----------------------------
-
 app.get("/api/health", async (req, res) => {
   try {
-    const result = await aceFetch("/health", {
-      method: "GET"
-    });
-
+    const client = await getAceClient();
+    const api = await client.view_api();
+    const endpoints = Object.keys(api?.named_endpoints || {});
     res.json({
       ok: true,
       provider: "ACE-Step 1.5",
-      aceStep: result
+      space: ACE_STEP_SPACE,
+      endpoint: ACE_STEP_API,
+      endpoints
     });
-
   } catch (error) {
-    console.error("ACE-Step health error:", error);
-
+    console.error("ACE-Step connection error:", error);
     res.status(503).json({
       ok: false,
       provider: "ACE-Step 1.5",
-      error: error.message,
-      aceStepUrl: ACE_STEP_URL
+      space: ACE_STEP_SPACE,
+      error: error.message
     });
   }
 });
-
-// -----------------------------
-// Generate
-// -----------------------------
 
 app.post("/api/generate", async (req, res) => {
   try {
@@ -195,174 +101,96 @@ app.post("/api/generate", async (req, res) => {
       instrumental
     } = req.body || {};
 
-    const finalPrompt =
+    const caption =
       String(prompt || "").trim() ||
       "A beautiful modern Afrobeats song with warm guitar, deep bass, rhythmic drums, catchy melody and emotional vocals.";
 
-    const finalLyrics =
-      String(lyrics || "").trim() ||
-      `[Verse 1]
-Walking through the night,
-Thinking about your love,
-Every little moment,
-Feels like heaven above.
+    const songLyrics = String(lyrics || "").trim();
 
-[Chorus]
-I will keep on loving you,
-No matter where you go,
-You are the rhythm in my heart,
-You are the only one I know.
-
-[Verse 2]
-Every sunrise brings your name,
-Every heartbeat calls for you,
-Through the highs and through the lows,
-My love will stay forever true.
-
-[Chorus]
-I will keep on loving you,
-No matter where you go,
-You are the rhythm in my heart,
-You are the only one I know.`;
-
-    const finalDuration =
-      Number(
-        audio_duration ??
-        duration ??
-        30
-      ) || 30;
-
-    const finalBpm =
-      bpm === undefined ||
-      bpm === null ||
-      bpm === ""
-        ? null
-        : Number(bpm);
-
-    const finalKey =
-      String(
-        key_scale ??
-        key ??
-        ""
-      ).trim();
-
-    const finalLanguage =
-      String(
-        vocal_language ??
-        vocalLanguage ??
-        "unknown"
-      ).trim() || "unknown";
-
-    const isInstrumental =
-      Boolean(instrumental);
+    const seconds = Math.min(
+      Math.max(
+        Number(audio_duration ?? duration ?? 30) || 30,
+        10
+      ),
+      600
+    );
 
     const payload = {
-      prompt: finalPrompt,
-
-      lyrics:
-        isInstrumental
-          ? ""
-          : finalLyrics,
-
-      thinking: false,
-
-      audio_duration:
-        Math.min(
-          Math.max(finalDuration, 10),
-          600
-        ),
-
-      bpm: finalBpm,
-
-      key_scale:
-        finalKey || null,
-
-      vocal_language:
-        finalLanguage,
-
-      audio_format: "mp3",
-
-      task_type: "text2music",
-
+      captions: caption,
+      lyrics: Boolean(instrumental)
+        ? "[Instrumental]"
+        : songLyrics,
+      bpm: bpm === undefined || bpm === null || bpm === ""
+        ? 0
+        : Number(bpm),
+      key_scale: String(key_scale ?? key ?? "").trim(),
+      time_signature: "",
+      vocal_language: String(
+        vocal_language ?? vocalLanguage ?? "unknown"
+      ).trim() || "unknown",
       inference_steps: 8,
-
       guidance_scale: 7,
-
+      random_seed_checkbox: true,
+      seed: "-1",
+      reference_audio: null,
+      audio_duration: seconds,
+      batch_size_input: 1,
+      src_audio: null,
+      text2music_audio_code_string: "",
+      repainting_start: 0,
+      repainting_end: -1,
+      instruction_display_gen: "",
+      audio_cover_strength: 1,
+      task_type: "text2music",
       use_adg: false,
-
       cfg_interval_start: 0,
-
       cfg_interval_end: 1,
-
-      infer_method: "ode",
-
       shift: 3,
-
+      infer_method: "ode",
+      custom_timesteps: "",
+      audio_format: "mp3",
       lm_temperature: 0.85,
-
-      lm_cfg_scale: 2.5,
-
-      lm_top_k: 50,
-
+      think_checkbox: true,
+      lm_cfg_scale: 2,
+      lm_top_k: 0,
       lm_top_p: 0.9,
-
-      lm_negative_prompt:
-        "NO USER INPUT",
-
+      lm_negative_prompt: "NO USER INPUT",
+      use_cot_metas: true,
       use_cot_caption: true,
-
       use_cot_language: true,
-
       is_format_caption: false,
-
-      allow_lm_batch: true
+      constrained_decoding_debug: false,
+      allow_lm_batch: true,
+      lm_batch_chunk_size: 8,
+      auto_score: false,
+      auto_lrc: false,
+      score_scale: 0.5
     };
 
-    console.log(
-      "Sending generation request to ACE-Step..."
-    );
+    console.log("Connecting to ACE-Step:", ACE_STEP_SPACE);
+    const client = await getAceClient();
 
-    const result = await aceFetch(
-      "/release_task",
-      {
-        method: "POST",
-        body: JSON.stringify(payload)
-      }
-    );
+    const result = await client.predict(ACE_STEP_API, payload);
+    const data = result?.data ?? result;
 
-    const data = unwrap(result);
+    const audio = findAudio(data);
 
-    const taskId =
-      data?.task_id ||
-      data?.id ||
-      data?.taskId;
-
-    if (!taskId) {
-      console.error(
-        "ACE-Step returned:",
-        JSON.stringify(result)
-      );
-
+    if (!audio) {
+      console.error("ACE-Step returned:", JSON.stringify(data));
       return res.status(502).json({
         ok: false,
-        error:
-          "ACE-Step did not return a task ID.",
-        response: result
+        error: "ACE-Step completed without returning an audio file.",
+        response: data
       });
     }
 
     res.json({
       ok: true,
-      id: taskId,
-      status: "generating"
+      status: "succeeded",
+      audio
     });
-
   } catch (error) {
-    console.error(
-      "Generation start error:",
-      error
-    );
-
+    console.error("Generation error:", error);
     res.status(500).json({
       ok: false,
       error: error.message
@@ -370,127 +198,12 @@ You are the only one I know.`;
   }
 });
 
-// -----------------------------
-// Poll generation
-// -----------------------------
-
-app.get(
-  "/api/generate/:id",
-  async (req, res) => {
-    try {
-      const taskId =
-        req.params.id;
-
-      const result =
-        await aceFetch(
-          "/query_result",
-          {
-            method: "POST",
-            body: JSON.stringify({
-              task_id_list: [taskId]
-            })
-          }
-        );
-
-      const data = unwrap(result);
-
-      // ACE-Step /query_result returns an array containing
-      // the requested task result.
-      const item = Array.isArray(data)
-        ? data.find(x => x?.task_id === taskId) || data[0]
-        : data;
-
-      let parsed = item?.result ?? item;
-
-      // The result field is commonly a JSON string containing
-      // an array of generated audio objects.
-      if (typeof parsed === "string") {
-        try {
-          parsed = JSON.parse(parsed);
-        } catch {
-          parsed = { raw: parsed };
-        }
-      }
-
-      const statusCode = item?.status ?? parsed?.status;
-      const status =
-        statusCode === 1 ? "complete" :
-        statusCode === 2 ? "failed" :
-        "generating";
-
-      if (status === "failed" || status === "error") {
-        return res.json({
-          ok: false,
-          status: "error",
-          error:
-            parsed?.message ||
-            parsed?.error ||
-            "ACE-Step generation failed."
-        });
-      }
-
-      const audioPath =
-        findAudioPath(parsed);
-
-      if (audioPath) {
-        return res.json({
-          ok: true,
-          status: "succeeded",
-          audio: makeAudioUrl(audioPath)
-        });
-      }
-
-      if (status === "complete") {
-        return res.json({
-          ok: true,
-          status: "generating"
-        });
-      }
-
-      res.json({
-        ok: true,
-        status: "generating"
-      });
-
-    } catch (error) {
-      console.error(
-        "Generation polling error:",
-        error
-      );
-
-      res.status(500).json({
-        ok: false,
-        status: "error",
-        error: error.message
-      });
-    }
-  }
-);
-
-// -----------------------------
-// Root fallback
-// -----------------------------
-
 app.get("/{*splat}", (req, res) => {
-  res.sendFile(
-    `${process.cwd()}/index.html`
-  );
+  res.sendFile(`${process.cwd()}/index.html`);
 });
 
-// -----------------------------
-// Start
-// -----------------------------
-
-app.listen(
-  PORT,
-  "0.0.0.0",
-  () => {
-    console.log(
-      `4TVIBEZ AI Music Studio running on port ${PORT}`
-    );
-
-    console.log(
-      `ACE-Step API: ${ACE_STEP_URL}`
-    );
-  }
-);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`4TVIBEZ AI Music Studio running on port ${PORT}`);
+  console.log(`ACE-Step Space: ${ACE_STEP_SPACE}`);
+  console.log(`ACE-Step endpoint: ${ACE_STEP_API}`);
+});
