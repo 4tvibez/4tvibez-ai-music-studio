@@ -120,33 +120,61 @@ app.post("/api/generate", async (req, res) => {
       "custom",                // generation_mode
       "",                      // simple_query_input
       "en",                     // simple_vocal_language
-      caption,                 // captions
-      Boolean(instrumental) ? "[Instrumental]" : songLyrics, // lyrics
-      bpm === undefined || bpm === null || bpm === "" ? 0 : Number(bpm), // bpm
-      String(key_scale ?? key ?? "").trim(), // key_scale
-      "",                      // time_signature
-      String(vocal_language ?? vocalLanguage ?? "unknown").trim() || "unknown", // vocal_language
-      1,                       // lm_top_p (ACE-Step minimum is 1)
-      "NO USER INPUT",        // lm_negative_prompt
-      true,                    // use_cot_metas
-      true,                    // use_cot_caption
-      true,                    // use_cot_language
-      true,                    // is_format_caption_state
-      false,                   // constrained_decoding_debug
-      true,                    // allow_lm_batch
-      false,                   // auto_score
-      false,                   // auto_lrc
-      0.5,                     // score_scale
-      8,                       // lm_batch_chunk_size
-      null,                    // track_name (unused for text2music)
-      [],                      // complete_track_classes (unused for text2music)
-      false,                   // autogen_checkbox
-      0,                       // current_batch_index
-      1,                       // total_batches
-      [],                      // batch_queue
-      {}                       // generation_params_state
-    ];
 
+      caption,                 // captions
+      songLyrics,              // lyrics
+      bpm === undefined || bpm === null || bpm === "" ? null : Number(bpm), // bpm
+      String(key_scale ?? key ?? "").trim(), // key_scale
+      "4/4",                   // time_signature
+      String(vocal_language ?? vocalLanguage ?? "en").trim() || "en", // vocal_language
+
+      8,                       // inference_steps
+      7,                       // guidance_scale
+      true,                    // random_seed_checkbox
+      -1,                      // seed
+      null,                    // reference_audio
+      seconds,                 // audio_duration
+      1,                       // batch_size
+      null,                    // src_audio
+      "",                      // text2music_audio_code_string
+      0,                       // repainting_start
+      -1,                      // repainting_end
+      "Fill the audio semantic mask based on the given conditions:", // instruction
+      1,                       // audio_cover_strength
+      "text2music",             // task_type
+
+      false,                    // use_adg
+      0,                        // cfg_interval_start
+      1,                        // cfg_interval_end
+      1,                        // shift
+      "ode",                    // infer_method
+      "",                       // custom_timesteps
+      "mp3",                    // audio_format
+
+      0.85,                     // lm_temperature
+      true,                     // think_checkbox
+      2,                        // lm_cfg_scale
+      0,                        // lm_top_k
+      0.9,                      // lm_top_p
+      "NO USER INPUT",           // lm_negative_prompt
+      true,                     // use_cot_metas
+      true,                     // use_cot_caption
+      true,                     // use_cot_language
+      false,                    // is_format_caption_state
+      false,                    // constrained_decoding_debug
+      true,                     // allow_lm_batch
+      false,                    // auto_score
+      false,                    // auto_lrc
+      0.5,                      // score_scale
+      8,                        // lm_batch_chunk_size
+      null,                     // track_name
+      [],                       // complete_track_classes
+      false,                    // autogen_checkbox
+      0,                        // current_batch_index
+      1,                        // total_batches
+      [],                       // batch_queue
+      {}                        // generation_params_state
+    ];
     console.log("Connecting to ACE-Step:", ACE_STEP_SPACE);
     const client = await getAceClient();
 
