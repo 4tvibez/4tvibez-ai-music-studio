@@ -419,11 +419,12 @@ async function generate(){
     const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,genre,mood,duration})});
     const text=await r.text(); let data={}; try{data=JSON.parse(text)}catch(_){}
     if(!r.ok) throw new Error(data.error||`Server returned ${r.status}`);
-    if(!data.predictionId) throw new Error('The server did not return a generation ID.');
+    const generationId = data.predictionId || data.id;
+    if(!generationId) throw new Error('The server did not return a generation ID.');
     status.textContent='AI is generating your song...';
     for(let i=0;i<100;i++){
       await new Promise(resolve=>setTimeout(resolve,3000));
-      const sr=await fetch('/api/generate/'+encodeURIComponent(data.predictionId));
+      const sr=await fetch('/api/generate/'+encodeURIComponent(generationId));
       const sd=await sr.json();
       if(sd.status==='succeeded' && sd.audio){
         clearInterval(timer); fill.style.width='100%'; status.textContent='✓ Your song is ready'; btn.disabled=false; btn.innerHTML='✦ Generate Music <span>→</span>'; showGeneratedSong(sd.audio,genre,mood); return;
