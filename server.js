@@ -8,8 +8,8 @@ const ACE_STEP_SPACE =
   process.env.ACE_STEP_SPACE || "ACE-Step/Ace-Step-v1.5";
 const ACE_STEP_API =
   process.env.ACE_STEP_API || "/generation_wrapper";
-const ACE_STEP_TOKEN =
-  process.env.ACE_STEP_TOKEN || "";
+const HF_TOKEN =
+  process.env.HF_TOKEN || process.env.ACE_STEP_TOKEN || "";
 
 let aceClientPromise = null;
 
@@ -20,7 +20,7 @@ async function getAceClient() {
   if (!aceClientPromise) {
     aceClientPromise = Client.connect(
       ACE_STEP_SPACE,
-      ACE_STEP_TOKEN ? { token: ACE_STEP_TOKEN } : undefined
+      HF_TOKEN ? { token: HF_TOKEN } : undefined
     ).catch((error) => {
       aceClientPromise = null;
       throw error;
