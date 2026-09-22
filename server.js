@@ -117,7 +117,7 @@ app.post("/api/generate", async (req, res) => {
 
     const payload = [
       "acestep-v15-xl-turbo", // selected_model
-      "Custom",                // generation_mode
+      "custom",                // generation_mode
       "",                      // simple_query_input
       "en",                    // simple_vocal_language
       caption,                 // captions
