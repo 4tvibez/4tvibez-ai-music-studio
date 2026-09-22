@@ -387,37 +387,38 @@ app.get(
           {
             method: "POST",
             body: JSON.stringify({
-              task_id: taskId
+              task_id_list: [taskId]
             })
           }
         );
 
       const data = unwrap(result);
 
-      let parsed = data;
+      // ACE-Step /query_result returns an array containing
+      // the requested task result.
+      const item = Array.isArray(data)
+        ? data.find(x => x?.task_id === taskId) || data[0]
+        : data;
 
-      // Some ACE-Step versions return
-      // the result as a JSON string.
-      if (typeof data === "string") {
+      let parsed = item?.result ?? item;
+
+      // The result field is commonly a JSON string containing
+      // an array of generated audio objects.
+      if (typeof parsed === "string") {
         try {
-          parsed = JSON.parse(data);
+          parsed = JSON.parse(parsed);
         } catch {
-          parsed = {
-            raw: data
-          };
+          parsed = { raw: parsed };
         }
       }
 
+      const statusCode = item?.status ?? parsed?.status;
       const status =
-        parsed?.status ??
-        data?.status ??
+        statusCode === 1 ? "complete" :
+        statusCode === 2 ? "failed" :
         "generating";
 
-      if (
-        status === 2 ||
-        status === "failed" ||
-        status === "error"
-      ) {
+      if (status === "failed" || status === "error") {
         return res.json({
           ok: false,
           status: "error",
@@ -434,23 +435,15 @@ app.get(
       if (audioPath) {
         return res.json({
           ok: true,
-          status: "complete",
-          audioUrl:
-            makeAudioUrl(audioPath)
+          status: "succeeded",
+          audio: makeAudioUrl(audioPath)
         });
       }
 
-      if (
-        status === 1 ||
-        status === "success" ||
-        status === "complete" ||
-        status === "completed"
-      ) {
+      if (status === "complete") {
         return res.json({
           ok: true,
-          status: "complete",
-          audioUrl: null,
-          result: parsed
+          status: "generating"
         });
       }
 
