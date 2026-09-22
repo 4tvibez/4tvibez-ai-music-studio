@@ -119,57 +119,32 @@ app.post("/api/generate", async (req, res) => {
       "acestep-v15-xl-turbo", // selected_model
       "custom",                // generation_mode
       "",                      // simple_query_input
-      "en",                    // simple_vocal_language
+      "en",                     // simple_vocal_language
       caption,                 // captions
-      Boolean(instrumental) ? "[Instrumental]" : songLyrics,
-      bpm === undefined || bpm === null || bpm === "" ? 0 : Number(bpm),
-      String(key_scale ?? key ?? "").trim(),
-      "",
-      String(vocal_language ?? vocalLanguage ?? "unknown").trim() || "unknown",
-      8,
-      7,
-      true,
-      "-1",
-      null,
-      seconds,
-      1,
-      null,
-      "",
-      0,
-      -1,
-      "",
-      1,
-      "text2music",
-      false,
-      0,
-      1,
-      3,
-      "ode",
-      "",
-      "mp3",
-      0.85,
-      true,
-      2,
-      0,
-      0.9,
-      "NO USER INPUT",
-      true,
-      true,
-      true,
-      false,
-      false,
-      true,
-      false,
-      false,
-      0.5,
-      8,
-      "",
-      "",
-      false,
-      0,
-      1,
-      {},
-      {}
+      Boolean(instrumental) ? "[Instrumental]" : songLyrics, // lyrics
+      bpm === undefined || bpm === null || bpm === "" ? 0 : Number(bpm), // bpm
+      String(key_scale ?? key ?? "").trim(), // key_scale
+      "",                      // time_signature
+      String(vocal_language ?? vocalLanguage ?? "unknown").trim() || "unknown", // vocal_language
+      0.9,                     // lm_top_p
+      "NO USER INPUT",        // lm_negative_prompt
+      true,                    // use_cot_metas
+      true,                    // use_cot_caption
+      true,                    // use_cot_language
+      true,                    // is_format_caption_state
+      false,                   // constrained_decoding_debug
+      true,                    // allow_lm_batch
+      false,                   // auto_score
+      false,                   // auto_lrc
+      0.5,                     // score_scale
+      8,                       // lm_batch_chunk_size
+      null,                    // track_name (unused for text2music)
+      [],                      // complete_track_classes (unused for text2music)
+      false,                   // autogen_checkbox
+      0,                       // current_batch_index
+      1,                       // total_batches
+      [],                      // batch_queue
+      {}                       // generation_params_state
     ];
 
     console.log("Connecting to ACE-Step:", ACE_STEP_SPACE);
